@@ -439,7 +439,7 @@ free of any path outside its own directory (decision 0006).
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `references/design-system.css`, whose entire content sits between `/* TOKENS:BEGIN */` and `/* TOKENS:END */` and is embedded verbatim into every template. Tier 2 role names, fixed for all later tasks: `--bg`, `--surface`, `--surface-sunken`, `--text`, `--text-muted`, `--border`, `--accent`, `--ok`, `--warn`, `--danger`.
+- Produces: `references/design-system.css`, whose entire content sits between `/* TOKENS:BEGIN */` and `/* TOKENS:END */` and is embedded verbatim into every template. Tier 2 role names, fixed for all later tasks: `--bg`, `--surface`, `--surface-sunken`, `--text`, `--text-muted`, `--border`, `--border-strong`, `--accent`, `--ok`, `--warn`, `--danger`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1730,8 +1730,8 @@ page without a template rather than forcing a bad fit.
    generated page, and never link it as an external stylesheet.
 2. **Never invent a color.** Every color comes from a Tier 2 semantic
    token: `--bg`, `--surface`, `--surface-sunken`, `--text`,
-   `--text-muted`, `--border`, `--accent`, `--ok`, `--warn`,
-   `--danger`. Tier 1 raw names are only for something deliberately
+   `--text-muted`, `--border`, `--border-strong`, `--accent`, `--ok`,
+   `--warn`, `--danger`. Tier 1 raw names are only for something deliberately
    theme-invariant, such as a swatch that displays a color as content.
 3. **Stay self-contained.** No CDN, no external font, no remote image.
    Embed images as data URIs or draw them as inline SVG.

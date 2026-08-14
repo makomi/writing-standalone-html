@@ -33,9 +33,10 @@ Breaking any of these breaks the point of the project.
 3. **No raw hex outside the token block.** Every color resolves through
    `var()`. `scripts/verify.sh` enforces this.
 4. **Tier 1 light values are upstream's palette.** Never retune them.
-   Dark-mode contrast problems get fixed in the dark-side raws
-   (`--ink`, `--ink-raised`, `--olive-light`, `--rust-light`), never by
-   editing `--clay` or `--ivory`.
+   Contrast problems get fixed in the variants this project added —
+   `--clay-deep`, `--olive-deep` for light, `--ink`, `--ink-raised`,
+   `--clay-light`, `--olive-light`, `--rust-light` for dark — never by
+   editing `--clay` or `--ivory` themselves.
 5. **`scripts/update.sh` is read-only.** It never edits a template and never
    writes `MANIFEST.json`, including `checked_at`. A cron run that
    dirties the git tree produces spurious diffs forever after.

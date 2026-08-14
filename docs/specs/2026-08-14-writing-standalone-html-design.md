@@ -74,50 +74,56 @@ splits into two tiers:
   accent" by name.
 
 - **Tier 2 — semantic roles.** Named by function, not color: `--bg`,
-  `--surface`, `--text`, `--text-muted`, `--border`, `--accent`, `--ok`,
-  `--warn`, `--danger`. Only Tier 2 is redefined between light and dark.
+  `--surface`, `--surface-sunken`, `--text`, `--text-muted`, `--border`,
+  `--border-strong`, `--accent`, `--ok`, `--warn`, `--danger`. Only
+  Tier 2 is redefined between light and dark.
 
 Illustrative shape (full definitions live in
 `references/design-system.css`):
 
 ```css
 :root {
-  /* Tier 1 — raw palette, fixed */
-  --ivory: #FAF9F5;
-  --slate: #141413;
-  --clay:  #D97757;
-  --oat:   #E3DACC;
-  --olive: #788C5D;
-  --rust:  #B04A3F;
-  --gray-100: #F0EEE6;
-  --gray-300: #D1CFC5;
-  --gray-500: #87867F;
-  --gray-700: #3D3D3A;
+  /* Tier 1 — raw palette, fixed, straight from upstream */
+  --ivory: #faf9f5;  --slate: #141413;  --clay: #d97757;
+  --oat:   #e3dacc;  --olive: #788c5d;  --rust: #b04a3f;
+  --gray-100: #f0eee6;  --gray-300: #d1cfc5;
+  --gray-500: #87867f;  --gray-700: #3d3d3a;  --white: #ffffff;
+
+  /* Tier 1 — variants this project adds, because upstream's accent
+     hues do not clear 4.5:1 as text on either ground */
+  --clay-deep: #c0502b;  --olive-deep: #677850;
+  --ink: #1a1a18;  --ink-raised: #232320;
+  --clay-light: #e89b80;  --olive-light: #9bb07a;  --rust-light: #d9695c;
 
   /* Tier 2 — semantic roles, light (default) */
-  --bg:          var(--ivory);
-  --surface:     #FFFFFF;
-  --text:        var(--slate);
-  --text-muted:  var(--gray-700);
-  --border:      var(--gray-300);
-  --accent:      var(--clay);
-  --ok:          var(--olive);
-  --warn:        var(--clay);
-  --danger:      var(--rust);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:         var(--slate);
-    --surface:    #1E1E1C;
-    --text:       var(--ivory);
-    --text-muted: var(--gray-300);
-    --border:     var(--gray-700);
-    /* --accent, --ok, --warn, --danger stay legible on dark; retuned
-       per-value where contrast requires it, not blanket-inherited */
-  }
+  --bg: var(--ivory);          --surface: var(--white);
+  --surface-sunken: var(--gray-100);
+  --text: var(--slate);        --text-muted: var(--gray-700);
+  --border: var(--gray-300);   --border-strong: var(--gray-500);
+  --accent: var(--clay-deep);  --ok: var(--olive-deep);
+  --warn: var(--clay-deep);    --danger: var(--rust);
 }
 ```
+
+The dark block redefines the same Tier 2 names and nothing else. The
+authoritative file is `references/design-system.css`.
+
+Two findings from building it, both recorded because they change how
+the palette is used:
+
+**Upstream's accent hues fail as text.** Clay reaches only 2.96:1 on
+ivory and olive only 3.49:1, short of the 4.5:1 that a link or a
+severity label needs. In these genres those colors are text — "shipped",
+"blocker", a jump link — so the roles point at `--clay-deep` and
+`--olive-deep` instead. Upstream's `--clay` and `--olive` keep their
+exact values in Tier 1 and stay available for decorative fills.
+
+**Borders split in two.** `--border` is a decorative hairline with no
+contrast floor, which is why upstream's soft `#d1cfc5` survives
+unchanged. `--border-strong` is for edges that convey state — an input,
+a toggle, a focus ring — and clears 3:1 in both themes. Holding every
+row rule to 3:1 would have forced a near-black divider and wrecked the
+look for no accessibility gain.
 
 Templates reference Tier 2 exclusively for anything that must adapt —
 backgrounds, text, borders, surfaces. Tier 1 stays available for
