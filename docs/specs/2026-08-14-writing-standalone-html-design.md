@@ -376,7 +376,7 @@ half (D4).
       "upstream_source": "11-status-report.html",
       "upstream_blob_sha": "764665143d3731ccb5e8978898bf7d7a5e46cc5f",
       "converted_at": "2026-08-14",
-      "raw_hex_count_at_conversion": 37
+      "raw_hex_count_at_conversion": 29
     }
   ]
 }
@@ -396,8 +396,9 @@ Fields:
   against on every run.
 - `files[].converted_at` — date this template was last (re)converted by
   the skill's ingest mode.
-- `files[].raw_hex_count_at_conversion` — the upstream raw-hex count
-  this conversion had to resolve (37 for `11-status-report.html`),
+- `files[].raw_hex_count_at_conversion` — the upstream colour count
+  outside `:root` this conversion had to resolve (29 for
+  `11-status-report.html`), counted by `lib/checks.py`,
   recorded so effort is visible when a file is re-converted. It is a
   record of work done, not a health metric; the post-conversion count
   outside the token block must be 0, and verify check 3 is what
