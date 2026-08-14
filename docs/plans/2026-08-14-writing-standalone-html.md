@@ -1887,14 +1887,16 @@ Expected: no output from `git status`, and `ok: no clone left`.
 
 - [ ] **Step 2: Write `CHANGELOG.md`**
 
+Entries are limited to what a person who installed the skill would
+notice. Apply the changelog rules in `AGENTS.md`; in particular,
+`references/conversion-rules.md` and the test suites do **not** appear
+here, because nobody who installs the skill reads them.
+
+Replace the `[Unreleased]` section rather than adding below it — that
+section currently states there is no user-facing surface, which stops
+being true at this release.
+
 ```markdown
-# Changelog
-
-All notable changes to this project are documented here.
-
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [1.0.0] - 2026-08-14
 
 ### Added
@@ -1902,17 +1904,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Twenty self-contained HTML templates, one per document genre, derived
   from `anthropics/html-effectiveness` at
   `58c305be97f47b26b678f2c07dec01d4242268ec`.
-- Two-tier token system in `references/design-system.css`: a fixed Tier 1
-  palette and a Tier 2 semantic layer carrying light and dark themes.
-- `references/conversion-rules.md`, the seven-step procedure for turning
-  an upstream file into a template.
-- `scripts/update.sh`, a read-only upstream drift checker that reads blob SHAs
-  from the GitHub API and needs no local copy of upstream.
-- `scripts/upstream.sh`, borrowing an ephemeral `--depth 1` clone into a
-  git-ignored `.upstream/` for the duration of an ingest run.
-- `scripts/verify.sh`, checking that every template parses, holds no external
-  reference, and carries no raw hex outside the token block.
-- `SKILL.md` with a genre-to-template selection table.
+- `SKILL.md` with a genre-to-template selection table, so the skill
+  triggers on the genre being written rather than on the file format.
+- Light and dark themes in every template, following the reader's
+  system setting.
+- `scripts/verify.sh`, checking that a template parses, holds no
+  external reference, and carries no raw hex outside the token block.
+- `scripts/update.sh`, a read-only upstream drift checker that needs no
+  local copy of upstream.
+- `scripts/upstream.sh`, borrowing an ephemeral clone for the duration
+  of an ingest run.
 ```
 
 - [ ] **Step 3: Commit and tag**

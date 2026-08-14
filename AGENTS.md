@@ -112,8 +112,39 @@ One paragraph: what changed and why.
 ```
 
 Wrap body and footer at 72 characters. One commit per logical change.
-Update `CHANGELOG.md` (Keep a Changelog format) in the same commit as
-the change it describes. Skip the footer for typos and formatting.
+Skip the footer for typos and formatting.
+
+## Changelog
+
+`CHANGELOG.md` records **what changes for someone who has installed the
+skill**. It is not a log of the work.
+
+Update it in the same commit as the change it describes. Never backfill
+it later from a run of commits: a changelog assembled after the fact
+looks compliant without doing the job, which is telling a reader what
+they are getting.
+
+**The test:** would somebody who installed this skill, and who will
+never read this repository, notice? If no, it does not go in.
+
+| Goes in | Stays in the commit body |
+|---|---|
+| A template added, removed or renamed | Test suites and fixtures |
+| A change to what the skill triggers on | Refactors, file moves |
+| A change to how a generated page looks | Tooling bugs fixed before release |
+| A command someone runs: `verify`, `update`, `upstream` | Corrections to our own measurements |
+| A change to the tokens a template embeds | Documentation syncs |
+| A breaking change to `MANIFEST.json` | Anything in `docs/` |
+
+Two rules that follow from this:
+
+- **An empty release section is a legitimate outcome.** If a milestone
+  changed nothing a user can see, say exactly that. Padding the section
+  with internal work to make it look substantial is the failure this
+  rule exists to prevent.
+- **A bug fixed before it ever shipped is not a fix.** It never reached
+  a user, so there is nothing to tell them. Record it in the commit
+  body, where the reasoning is useful to whoever hits it next.
 
 ## Writing
 
