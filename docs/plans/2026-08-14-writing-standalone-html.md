@@ -916,6 +916,30 @@ improvise.
 
 ---
 
+> **Re-batched 2026-08-14, during implementation.** The per-file colour
+> counts below replace the ones this plan was written with. The original
+> figures came from a bare regex over the whole file and were wrong two
+> ways: pull-request numbers such as `#4871` counted as colours, and the
+> `:root` stripping swallowed most of the stylesheet in
+> `16-implementation-plan.html`, reporting 0 where the real count is 36.
+> Measured counts outside `:root`, via `lib/checks.py`:
+>
+> | Count | Files |
+> |---|---|
+> | 0 | `06`, `08`, `20` |
+> | 2 | `01`, `07`, `12` |
+> | 4 | `02`, `14`, `15` |
+> | 5-6 | `19`, `09`, `17` |
+> | 7-12 | `04`, `13`, `18`, `03` |
+> | 17-36 | `05`, `11`, `16` |
+> | 97 | `10` |
+>
+> Total 253, from 49 distinct values. Tasks 4 through 7 below are
+> regrouped accordingly: only three files are genuinely colour-free, and
+> `16` moves from the easy batch to the heavy one.
+
+---
+
 ### Task 4: Pilot conversion — `01-exploration-code-approaches.html`
 
 One file, end to end, before committing to the other nineteen. This is the cheapest place to discover that the rules are wrong.
@@ -996,7 +1020,7 @@ one marked instance.
 
 ---
 
-### Task 5: The five remaining zero-hex files
+### Task 5: The colour-free files (`06`, `08`, `20`) and the 2-colour files (`07`, `12`)
 
 **Files:**
 - Create: `templates/02-exploration-visual-designs.html`
@@ -1009,7 +1033,7 @@ one marked instance.
 - Consumes: the procedure validated in Task 4.
 - Produces: six templates total in `templates/`.
 
-These five carry zero raw hex outside `:root`, so the color work stays a straight token swap and the effort is concentrated in content collapse.
+`06`, `08` and `20` carry no colours outside `:root` at all; `07` and `12` carry two each. Effort here is concentrated in content collapse rather than re-tokenization.
 
 - [ ] **Step 1: Borrow the clone, then convert each file**
 
@@ -1076,7 +1100,7 @@ a flow needs two screens.
 
 ---
 
-### Task 6: The eleven low-hex files
+### Task 6: The low-colour files (`02`, `14`, `15`, `19`, `09`, `17`, `04`)
 
 **Files:**
 - Create: `templates/03-code-review-pr.html` (14 raw hex)
@@ -1181,7 +1205,7 @@ warning.
 
 ---
 
-### Task 7: The three heavy files
+### Task 7: The heavy files (`13`, `18`, `03`, `05`, `11`, `16`, `10`)
 
 **Files:**
 - Create: `templates/05-design-system.html` (30 raw hex)

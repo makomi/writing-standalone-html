@@ -69,6 +69,18 @@
   }
 }
 
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
 /* --border is a decorative hairline: a row rule, a panel edge. It
    carries no meaning and has no contrast floor, which is why upstream's
    soft #d1cfc5 survives unchanged. --border-strong is for anything

@@ -136,8 +136,8 @@ not just content-stripping — it is **re-tokenization**. Every
 `background: var(--ivory)` becomes `background: var(--bg)`, every
 `color: var(--gray-800)` (or whatever that file happened to call slate)
 becomes `color: var(--text)`, and so on for the full set of role
-mappings. The ~270 hardcoded hex literals found outside `:root` blocks
-(section 4.1) get the same treatment: each literal is mapped to the
+mappings. The 253 hardcoded hex literals found outside `:root` blocks
+(section 4.2) get the same treatment: each literal is mapped to the
 Tier 2 role it plays in context, then replaced with the `var()` call.
 
 This re-tokenization step is the bulk of the implementation effort. It
@@ -197,15 +197,41 @@ working implementation is cheaper and safer than regenerating it.
 CSS dominates upstream: 40–75% of each file's lines sit inside
 `<style>`. Example: `11-status-report.html` is 528 lines, 296 of them
 `<style>`. Conversion effort tracks raw-hex count outside `:root`, since
-each literal needs a manual role decision (section 3.3):
+each literal needs a manual role decision (section 3.3).
 
-- **Zero raw hex outside `:root` — the easy files:** `01`, `02`, `06`,
-  `08`, `16`, `20`. These already reference `:root` tokens throughout,
-  so conversion is close to a straight token rename.
-- **Highest effort:** `10-svg-illustrations.html`, 105 raw hex
-  occurrences — almost all SVG `fill` attributes, which sit outside the
-  CSS cascade entirely and must be re-tokenized attribute by attribute
-  or lifted into CSS classes.
+Counts below were measured with `lib/checks.py`, which scans `<style>`
+blocks and color-bearing attributes only. An earlier pass used a bare
+regex over the whole file and was wrong twice over: it counted
+pull-request numbers such as `#4871` in `11-status-report.html` as
+colors, and its `:root` stripping swallowed most of the stylesheet in
+`16-implementation-plan.html`, reporting that file as having no colors
+at all when it has 36.
+
+Colors outside `:root`, per file:
+
+| Count | Files |
+|---|---|
+| 0 | `06`, `08`, `20` |
+| 2 | `01`, `07`, `12` |
+| 4 | `02`, `14`, `15` |
+| 5–6 | `19`, `09`, `17` |
+| 7–12 | `04`, `13`, `18`, `03` |
+| 17 | `05` |
+| 29 | `11` |
+| 36 | `16` |
+| 97 | `10` |
+
+Total 253 across the 20 files, drawn from 49 distinct values. Fourteen
+of those recur three or more times and are mapped explicitly in
+`references/conversion-rules.md`; the remaining 35 are one-offs —
+gradient stops, tag tints, chart series — handled by an ordered
+fallback procedure rather than a table.
+
+- **Highest effort:** `10-svg-illustrations.html`, 97 colors, almost all
+  SVG `fill` attributes, which sit outside the CSS cascade entirely and
+  must be lifted into CSS classes.
+- **Next:** `16-implementation-plan.html` (36) and `11-status-report.html`
+  (29), both carrying inline chart and diagram colors.
 - **Next highest:** `11-status-report.html` (37), `05-design-system.html`
   (30).
 
@@ -443,14 +469,16 @@ the current ingest run — not to the full set on every check.
   records this as "changed upstream" either way; the human or agent
   running ingest mode must open the diff to know which case they are in.
 
-- **The `#B04A4A` stray.** Of the ~270 raw hex literals outside
-  `:root`, 11 of 12 distinct values are already palette members written
-  literally. The twelfth, `#B04A4A` (3 occurrences), is a near-duplicate
-  of rust `#B04A3F` — one hex digit off. Conversion must decide, file by
-  file, whether this is a typo that should collapse into `--rust` or an
-  intentional near-rust variant that deserves its own Tier 1 token. This
-  is a judgment call, not a mechanical mapping, and conversion-rules.md
-  should record the decision made for each occurrence.
+- **One-off colors outstrip any table.** Of the 49 distinct values
+  outside `:root`, only 14 recur three or more times. The remaining 35
+  are gradient stops, tag tints and chart series appearing once or
+  twice. Enumerating them would produce a list, not a rule, so
+  `references/conversion-rules.md` gives an ordered fallback instead:
+  collapse near-duplicates, express tints with `color-mix`, assign
+  series colors by role, escalate the rest. The clearest near-duplicate
+  is `#b04a4a` (3 uses), one digit from rust `#b04a3f`; upstream's own
+  `#b85c3e` is likewise a deep clay it defines as `--clay-d` in three
+  files.
 
 - **Dark-layer maintenance cost.** Upstream carries no dark mode and
   will not maintain one. Every future upstream change that touches color

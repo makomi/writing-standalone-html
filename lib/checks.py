@@ -10,7 +10,15 @@ from html.parser import HTMLParser
 TOKEN_BLOCK = re.compile(
     r"/\*\s*TOKENS:BEGIN.*?TOKENS:END\s*\*/", re.S
 )
-HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
+HEX = re.compile(r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b")
+
+# Attributes that can carry a color. SVG presentation attributes are the
+# reason this list is not just `style`.
+COLOR_ATTR = re.compile(
+    r"""\b(?:style|fill|stroke|stop-color|flood-color|lighting-color|
+         color|bgcolor)\s*=\s*["'](?P<val>[^"']*)["']""",
+    re.I | re.X,
+)
 VOID = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "source", "track", "wbr",
@@ -72,20 +80,41 @@ def check_no_external_refs(text):
     return out
 
 
-def check_no_raw_hex_outside_tokens(text):
-    """Blank the sentinel token block, then scan what remains.
+def _blank(text, match):
+    """Replace a match with spaces, keeping newlines and line numbers."""
+    return text[:match.start()] + re.sub(r"[^\n]", " ", match.group(0)) + \
+        text[match.end():]
 
-    Blanking rather than deleting preserves line numbers, so reported
-    positions stay true to the original file.
+
+def check_no_raw_hex_outside_tokens(text):
+    """Scan only where a color can legally appear.
+
+    A hex color lives in a <style> block or in a color-bearing
+    attribute. It never lives in element text -- and element text is
+    full of things shaped like hex: "#4871" is a pull-request number in
+    11-status-report.html, not a color. Scanning the raw file would
+    fail that template forever for quoting a PR number.
+
+    So: blank the sentinel token block, then collect the regions where
+    a color is possible and scan those. Blanking rather than deleting
+    preserves line numbers, so reported positions stay true.
     """
     stripped = TOKEN_BLOCK.sub(
         lambda m: re.sub(r"[^\n]", " ", m.group(0)), text
     )
+
+    regions = []
+    for m in re.finditer(r"<style\b[^>]*>(.*?)</style>", stripped, re.S | re.I):
+        regions.append((m.start(1), m.group(1)))
+    for m in COLOR_ATTR.finditer(stripped):
+        regions.append((m.start("val"), m.group("val")))
+
     out = []
-    for m in HEX.finditer(stripped):
-        line = stripped.count("\n", 0, m.start()) + 1
-        out.append(f"raw hex {m.group(0)} at line {line}")
-    return out
+    for offset, chunk in regions:
+        for m in HEX.finditer(chunk):
+            line = stripped.count("\n", 0, offset + m.start()) + 1
+            out.append(f"raw hex {m.group(0)} at line {line}")
+    return sorted(set(out))
 
 
 CHECKS = [

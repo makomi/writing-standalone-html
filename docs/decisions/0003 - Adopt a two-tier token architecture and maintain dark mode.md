@@ -44,16 +44,25 @@ having.
   per template.
 - Conversion becomes strip-content **and** re-tokenize. This is the bulk
   of the implementation effort, not a side task.
-- The ~270 hex literals sitting outside `:root` upstream must each be
+- The 253 hex literals sitting outside `:root` upstream must each be
   mapped to the role they play. This cannot be done by matching on the
   hex value alone: `#3D3D3A` is body text in one place and a border in
   another, and the correct token depends on the job, not the value.
-- `10-svg-illustrations.html` carries 105 of those literals in SVG `fill`
+  They draw from 49 distinct values, of which only 14 recur often
+  enough to deserve a table row.
+- `10-svg-illustrations.html` carries 97 of those literals in SVG `fill`
   attributes, outside the CSS cascade. It is the most expensive file to
-  convert.
+  convert, followed by `16-implementation-plan.html` at 36.
 - Naming drift is resolved once, on our side, rather than inherited.
 - Every future upstream change touching color needs a dark-mode judgment
   call, indefinitely. Upstream will not make it for us.
+
+**Note added 2026-08-14, during implementation.** Upstream's clay
+reaches only 2.96:1 on ivory and its olive 3.49:1, short of the 4.5:1
+these roles need as text. `--accent` and `--ok` therefore resolve to new
+`--clay-deep` and `--olive-deep` variants; Tier 1 keeps upstream's
+values untouched. Upstream reached the same conclusion independently,
+defining `--clay-d: #b85c3e` in three files.
 
 ## Alternatives rejected
 
