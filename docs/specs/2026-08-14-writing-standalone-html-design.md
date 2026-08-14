@@ -1,7 +1,8 @@
 # Design spec: writing-standalone-html skill
 
-Status: draft
+Status: accepted
 Date: 2026-08-14
+Implemented: tasks 1-3 of 10 (see docs/plans/)
 
 ## 1. Purpose and scope
 

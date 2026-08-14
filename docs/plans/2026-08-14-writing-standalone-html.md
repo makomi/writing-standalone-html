@@ -1,6 +1,6 @@
 # writing-standalone-html Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a Claude Code skill that supplies house-styled, self-contained HTML templates for 20 known document genres, derived from `anthropics/html-effectiveness` and re-tokenized for light and dark themes.
 
@@ -47,7 +47,7 @@
 - Consumes: nothing.
 - Produces: `verify.sh [path...]` — exits 0 when all checked files pass, 1 otherwise, printing one line per failure as `FAIL <file>: <check>: <detail>`. Defaults to `templates/*.html` when given no arguments. `lib/checks.py` exposes `check_parses(text) -> list[str]`, `check_no_external_refs(text) -> list[str]`, `check_no_raw_hex_outside_tokens(text) -> list[str]`, each returning a list of human-readable problem strings, empty when the file passes. `upstream.sh fetch` clones upstream `--depth 1` into `.upstream/` and prints the commit SHA; `upstream.sh clean` removes it; both are idempotent.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/fixtures/good.html`:
 
@@ -120,7 +120,7 @@ assert_output_contains "raw hex" tests/fixtures/bad-raw-hex.html "names the raw-
 exit $fail
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 chmod +x tests/test_verify.sh
@@ -129,7 +129,7 @@ chmod +x tests/test_verify.sh
 
 Expected: fails on every assertion, because `scripts/verify.sh` does not exist yet.
 
-- [ ] **Step 3: Write `lib/checks.py`**
+- [x] **Step 3: Write `lib/checks.py`**
 
 ```python
 """Mechanical checks for standalone HTML templates.
@@ -244,7 +244,7 @@ if __name__ == "__main__":
     sys.exit(status)
 ```
 
-- [ ] **Step 4: Write `scripts/verify.sh`**
+- [x] **Step 4: Write `scripts/verify.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -272,7 +272,7 @@ fi
 exit $status
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 chmod +x scripts/verify.sh
@@ -281,7 +281,7 @@ chmod +x scripts/verify.sh
 
 Expected: five `ok:` lines, exit 0.
 
-- [ ] **Step 6: Write `scripts/upstream.sh`**
+- [x] **Step 6: Write `scripts/upstream.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -327,7 +327,7 @@ case "${1:-}" in
 esac
 ```
 
-- [ ] **Step 7: Write `tests/test_upstream.sh`**
+- [x] **Step 7: Write `tests/test_upstream.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -368,7 +368,7 @@ else echo "ASSERT FAIL: second clean exited non-zero"; fail=1; fi
 exit $fail
 ```
 
-- [ ] **Step 8: Write `.gitignore`**
+- [x] **Step 8: Write `.gitignore`**
 
 ```
 .upstream/
@@ -376,7 +376,7 @@ exit $fail
 .DS_Store
 ```
 
-- [ ] **Step 9: Prove the harness catches real upstream input**
+- [x] **Step 9: Prove the harness catches real upstream input**
 
 Fixtures prove the checks work on material written to fail them. This step proves they work on the real thing:
 
@@ -388,7 +388,7 @@ python3 lib/checks.py .upstream/11-status-report.html
 
 Expected: numerous `raw hex` failures. Record the count — the spec predicts 37 outside `:root`, and this check counts hex inside `:root` too, since upstream carries no sentinel markers.
 
-- [ ] **Step 10: Run every test**
+- [x] **Step 10: Run every test**
 
 ```bash
 chmod +x scripts/upstream.sh tests/test_upstream.sh
@@ -397,7 +397,7 @@ chmod +x scripts/upstream.sh tests/test_upstream.sh
 
 Expected: all assertions `ok`, and no `.upstream/` directory left behind.
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add scripts lib tests .gitignore
@@ -441,7 +441,7 @@ free of any path outside its own directory (decision 0006).
 - Consumes: nothing.
 - Produces: `references/design-system.css`, whose entire content sits between `/* TOKENS:BEGIN */` and `/* TOKENS:END */` and is embedded verbatim into every template. Tier 2 role names, fixed for all later tasks: `--bg`, `--surface`, `--surface-sunken`, `--text`, `--text-muted`, `--border`, `--border-strong`, `--accent`, `--ok`, `--warn`, `--danger`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_tokens.py`:
 
@@ -551,7 +551,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 python3 tests/test_tokens.py
@@ -559,7 +559,7 @@ python3 tests/test_tokens.py
 
 Expected: `FileNotFoundError` for `references/design-system.css`.
 
-- [ ] **Step 3: Write `references/design-system.css`**
+- [x] **Step 3: Write `references/design-system.css`**
 
 The Tier 1 light values are upstream's palette, unchanged. The dark-side raws (`--ink`, `--ink-raised`, `--olive-light`, `--rust-light`) are new: upstream's olive and rust do not reach 3:1 against a dark ground, so dark mode needs lightened variants.
 
@@ -630,7 +630,7 @@ The Tier 1 light values are upstream's palette, unchanged. The dark-side raws (`
 
 `--warn` intentionally resolves to the same clay as `--accent`. Upstream's palette carries three hues (clay, olive, rust) and no fourth for warnings. If a template genuinely needs accent and warning to differ visually, that is an escalation recorded in `references/conversion-rules.md`, not a silent new color.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 python3 tests/test_tokens.py
@@ -640,7 +640,7 @@ Expected: `PASS: 0 problem(s)`.
 
 If any pairing fails, adjust the dark-side raw values only — never a Tier 1 light value, which is upstream's palette and fixed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add references/design-system.css tests/test_tokens.py
@@ -680,7 +680,7 @@ Conversion is agent work (decision 0004), which makes this file load-bearing: it
 - Consumes: Tier 2 role names from Task 2.
 - Produces: the written procedure every conversion task follows, including a hex-to-role mapping table covering all 12 distinct hex values found upstream.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 The rules file must map every distinct hex that appears upstream, or a conversion will hit an unmapped color and improvise. Create `tests/test_conversion_rules.py`:
 
@@ -731,7 +731,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 2: Borrow the clone and run the test to verify it fails**
+- [x] **Step 2: Borrow the clone and run the test to verify it fails**
 
 ```bash
 ./scripts/upstream.sh fetch
@@ -742,7 +742,7 @@ Expected: `FileNotFoundError` for `references/conversion-rules.md`.
 
 Keep `.upstream/` for the next two steps. Step 6 gives it back.
 
-- [ ] **Step 3: Enumerate the real upstream colors before writing the table**
+- [x] **Step 3: Enumerate the real upstream colors before writing the table**
 
 Do not write the mapping from memory. Generate the ground truth:
 
@@ -753,7 +753,7 @@ grep -ohiE '#[0-9a-f]{3,8}\b' .upstream/[0-9]*.html \
 
 Copy every distinct value into the table in Step 4. If a color appears that this plan does not list, add a row for it — the plan's list was measured on commit `58c305b` and upstream may have moved.
 
-- [ ] **Step 4: Write `references/conversion-rules.md`**
+- [x] **Step 4: Write `references/conversion-rules.md`**
 
 ```markdown
 # Conversion rules
@@ -871,7 +871,7 @@ it reads correctly in both light and dark — the fourth check, which no
 script can make.
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 ```bash
 python3 tests/test_conversion_rules.py
@@ -879,7 +879,7 @@ python3 tests/test_conversion_rules.py
 
 Expected: `PASS: N/N mapped`. If a color is reported unmapped, add a row for it — do not delete the assertion.
 
-- [ ] **Step 6: Give the clone back**
+- [x] **Step 6: Give the clone back**
 
 ```bash
 ./scripts/upstream.sh clean
@@ -888,7 +888,7 @@ git status --porcelain
 
 Expected: no `.upstream` entry, because it is git-ignored, and no stray files.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add references/conversion-rules.md tests/test_conversion_rules.py

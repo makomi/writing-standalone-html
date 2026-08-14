@@ -11,20 +11,26 @@ reference. Open it in a browser and it works.
 
 ## Status
 
-**Design complete, implementation pending.** This repository currently
-holds the design record only:
+**Tooling built, templates not yet converted.** Tasks 1 to 3 of the
+ten-task plan are done and their tests pass.
 
-| Path | Contents |
+| Path | State |
 |---|---|
-| `docs/specs/` | The approved design spec |
-| `docs/decisions/` | Six decision records, `0001` through `0006` |
-| `docs/plans/` | The ten-task implementation plan |
+| `references/design-system.css` | Built — two-tier tokens, light and dark |
+| `references/conversion-rules.md` | Built — the seven-step procedure |
+| `scripts/verify.sh` | Built — three mechanical checks |
+| `scripts/upstream.sh` | Built — borrow and return the clone |
+| `lib/`, `tests/` | Built — 4 test suites, all green |
+| `templates/` | **Empty.** 20 conversions outstanding |
+| `scripts/update.sh`, `SKILL.md`, `CHANGELOG.md` | Not written yet |
 
-`SKILL.md`, `templates/`, `references/`, `scripts/` and `lib/` do not
-exist yet. The plan builds them. Start at
-`docs/plans/2026-08-14-writing-standalone-html.md`.
+Until `templates/` is populated the skill does nothing useful, because
+`SKILL.md` — the file Claude Code reads to trigger it — does not exist.
 
-## What it will do
+Resume at Task 4 in `docs/plans/2026-08-14-writing-standalone-html.md`.
+Run the suite first; it should be green before anything is added.
+
+## How it works
 
 Templates derive from
 [`anthropics/html-effectiveness`](https://github.com/anthropics/html-effectiveness)
@@ -47,6 +53,21 @@ adds a semantic tier — `--bg`, `--surface`, `--text`, `--accent`,
 `--ok`, `--danger` and the rest — and templates reference that. Dark
 mode then costs one edit to a shared block instead of one edit per
 template.
+
+There are 253 such colors across the twenty files, drawn from 49
+distinct values. Fourteen recur often enough to be mapped in a table;
+the rest are gradient stops and tag tints handled by an ordered
+fallback. `10-svg-illustrations.html` alone holds 97, in SVG
+presentation attributes that have to be lifted into CSS classes before
+they can take a `var()`.
+
+Two accessibility findings shaped the palette. Upstream's clay reaches
+only 2.96:1 on ivory and its olive 3.49:1, short of the 4.5:1 these
+colors need when used as text — so `--accent` and `--ok` resolve to
+darker variants while Tier 1 keeps upstream's exact values. And
+`--border` is deliberately exempt from a contrast floor: a table row
+rule is decoration, not a control boundary. `--border-strong` carries
+that requirement instead.
 
 ## Installing
 

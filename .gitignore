@@ -1,3 +1,10 @@
 .upstream/
+__pycache__/
+*.pyc
 *.tmp
 .DS_Store
+
+# Session-local, never committed
+HANDOFF.md
+docs/HANDOFF.md
+TASKS.md
