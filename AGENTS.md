@@ -31,12 +31,12 @@ Breaking any of these breaks the point of the project.
    `references/design-system.css` would satisfy DRY and destroy
    invariant 1.
 3. **No raw hex outside the token block.** Every color resolves through
-   `var()`. `verify.sh` enforces this.
+   `var()`. `scripts/verify.sh` enforces this.
 4. **Tier 1 light values are upstream's palette.** Never retune them.
    Dark-mode contrast problems get fixed in the dark-side raws
    (`--ink`, `--ink-raised`, `--olive-light`, `--rust-light`), never by
    editing `--clay` or `--ivory`.
-5. **`update.sh` is read-only.** It never edits a template and never
+5. **`scripts/update.sh` is read-only.** It never edits a template and never
    writes `MANIFEST.json`, including `checked_at`. A cron run that
    dirties the git tree produces spurious diffs forever after.
 6. **Interaction logic is kept, not rewritten.** Keyboard navigation,
@@ -44,8 +44,8 @@ Breaking any of these breaks the point of the project.
    working. Do not refactor or simplify them.
 7. **Nothing references a path outside this directory.** Drift
    detection reads the GitHub API. Anything needing upstream file
-   contents runs `./upstream.sh fetch`, works in `.upstream/`, and runs
-   `./upstream.sh clean`. Never hardcode a clone living elsewhere on
+   contents runs `./scripts/upstream.sh fetch`, works in `.upstream/`, and runs
+   `./scripts/upstream.sh clean`. Never hardcode a clone living elsewhere on
    the machine, and never leave `.upstream/` behind.
 
 ## Running the checks
@@ -53,16 +53,16 @@ Breaking any of these breaks the point of the project.
 No install step. Python 3 standard library only.
 
 ```bash
-./verify.sh                      # all templates
-./verify.sh templates/09-*.html  # one file
+./scripts/verify.sh                      # all templates
+./scripts/verify.sh templates/09-*.html  # one file
 ./tests/test_verify.sh           # the checker's own tests
 ./tests/test_upstream.sh         # borrow and return the clone
 python3 tests/test_tokens.py     # token roles and WCAG contrast
 ./tests/test_update.sh           # drift classification and exit codes
 
 # This one reads upstream sources, so bracket it:
-./upstream.sh fetch && python3 tests/test_conversion_rules.py; \
-  rc=$?; ./upstream.sh clean; exit $rc
+./scripts/upstream.sh fetch && python3 tests/test_conversion_rules.py; \
+  rc=$?; ./scripts/upstream.sh clean; exit $rc
 ```
 
 Do not add a dependency, a package manager, or a virtualenv. The repo
@@ -87,7 +87,7 @@ Two rules people get wrong:
   dependency warning needs a prerequisite to point at. Use judgment and
   record it in the template's header notes.
 
-After converting, run `./verify.sh <file>` and open the result in a
+After converting, run `./scripts/verify.sh <file>` and open the result in a
 browser in both themes. The theme check is not automatable and is the
 one that catches a color mapped to the wrong role.
 

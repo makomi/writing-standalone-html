@@ -4,7 +4,7 @@
 
 **Goal:** Build a Claude Code skill that supplies house-styled, self-contained HTML templates for 20 known document genres, derived from `anthropics/html-effectiveness` and re-tokenized for light and dark themes.
 
-**Architecture:** A two-tier CSS token file is the single source of truth for color; every template embeds it verbatim between sentinel comments. Twenty templates are converted from upstream by stripping repeated content to one worked instance and rewriting every color to a semantic token. A read-only `update.sh` detects upstream drift by blob SHA; conversion itself stays agent work under written rules.
+**Architecture:** A two-tier CSS token file is the single source of truth for color; every template embeds it verbatim between sentinel comments. Twenty templates are converted from upstream by stripping repeated content to one worked instance and rewriting every color to a semantic token. A read-only `scripts/update.sh` detects upstream drift by blob SHA; conversion itself stays agent work under written rules.
 
 **Tech Stack:** Bash, Python 3 standard library only, HTML, CSS. No package manager, no dependencies, no build step. Do not introduce `uv`, npm, or a virtualenv — there is nothing to install.
 
@@ -21,7 +21,7 @@
 - Genre-specific CSS and JavaScript are kept intact and unabridged.
 - Repeated sibling content collapses to exactly one instance, marked with an HTML comment naming the repetition.
 - Upstream pin: `anthropics/html-effectiveness` at `58c305be97f47b26b678f2c07dec01d4242268ec`.
-- **The skill depends on no path outside its own directory.** Drift detection reads blob SHAs from the GitHub API. Anything needing file contents runs `./upstream.sh fetch` to borrow a `--depth 1` clone at `.upstream/`, and `./upstream.sh clean` to delete it. `.upstream/` is git-ignored and must not survive a task. Never hardcode a path to a clone elsewhere on the machine (decision 0006).
+- **The skill depends on no path outside its own directory.** Drift detection reads blob SHAs from the GitHub API. Anything needing file contents runs `./scripts/upstream.sh fetch` to borrow a `--depth 1` clone at `.upstream/`, and `./scripts/upstream.sh clean` to delete it. `.upstream/` is git-ignored and must not survive a task. Never hardcode a path to a clone elsewhere on the machine (decision 0006).
 - All upstream sample data is fictional and branded "Acme". No Acme string may survive into a template.
 - Commit messages follow Conventional Commits with the metadata footer from the user's global CLAUDE.md. Body and footer wrap at 72 characters.
 - Never use gendered or gender-split language in any file.
@@ -30,11 +30,11 @@
 
 ### Task 1: Scaffolding, the verification harness, and the upstream borrow script
 
-`verify.sh` is the test suite for every later task, so it is built first and proven against known-good and known-bad input. `upstream.sh` lands here too, because Task 1's own final check needs a real upstream file to run against and nothing else may reach outside the skill folder to find one.
+`scripts/verify.sh` is the test suite for every later task, so it is built first and proven against known-good and known-bad input. `scripts/upstream.sh` lands here too, because Task 1's own final check needs a real upstream file to run against and nothing else may reach outside the skill folder to find one.
 
 **Files:**
-- Create: `verify.sh`
-- Create: `upstream.sh`
+- Create: `scripts/verify.sh`
+- Create: `scripts/upstream.sh`
 - Create: `lib/checks.py`
 - Create: `tests/fixtures/good.html`
 - Create: `tests/fixtures/bad-external-ref.html`
@@ -91,7 +91,7 @@ fail=0
 
 assert_exit() {
   local want="$1" file="$2" label="$3"
-  ./verify.sh "$file" >/dev/null 2>&1
+  ./scripts/verify.sh "$file" >/dev/null 2>&1
   local got=$?
   if [ "$got" != "$want" ]; then
     echo "ASSERT FAIL: $label — wanted exit $want, got $got"
@@ -103,7 +103,7 @@ assert_exit() {
 
 assert_output_contains() {
   local needle="$1" file="$2" label="$3"
-  if ./verify.sh "$file" 2>&1 | grep -q "$needle"; then
+  if ./scripts/verify.sh "$file" 2>&1 | grep -q "$needle"; then
     echo "ok: $label"
   else
     echo "ASSERT FAIL: $label — output missing '$needle'"
@@ -127,7 +127,7 @@ chmod +x tests/test_verify.sh
 ./tests/test_verify.sh
 ```
 
-Expected: fails on every assertion, because `verify.sh` does not exist yet.
+Expected: fails on every assertion, because `scripts/verify.sh` does not exist yet.
 
 - [ ] **Step 3: Write `lib/checks.py`**
 
@@ -244,14 +244,14 @@ if __name__ == "__main__":
     sys.exit(status)
 ```
 
-- [ ] **Step 4: Write `verify.sh`**
+- [ ] **Step 4: Write `scripts/verify.sh`**
 
 ```bash
 #!/usr/bin/env bash
 # Mechanical verification for standalone HTML templates.
-# Usage: ./verify.sh [file...]   (defaults to templates/*.html)
+# Usage: ./scripts/verify.sh [file...]   (defaults to templates/*.html)
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 files=("$@")
 if [ ${#files[@]} -eq 0 ]; then
@@ -275,25 +275,25 @@ exit $status
 - [ ] **Step 5: Run the tests to verify they pass**
 
 ```bash
-chmod +x verify.sh
+chmod +x scripts/verify.sh
 ./tests/test_verify.sh
 ```
 
 Expected: five `ok:` lines, exit 0.
 
-- [ ] **Step 6: Write `upstream.sh`**
+- [ ] **Step 6: Write `scripts/upstream.sh`**
 
 ```bash
 #!/usr/bin/env bash
 # Borrow an ephemeral clone of upstream, then give it back.
 #
-#   ./upstream.sh fetch   clone --depth 1 into .upstream/, print commit
-#   ./upstream.sh clean   delete .upstream/
+#   ./scripts/upstream.sh fetch   clone --depth 1 into .upstream/, print commit
+#   ./scripts/upstream.sh clean   delete .upstream/
 #
 # The skill keeps no permanent copy of upstream (decision 0006).
 # .upstream/ is git-ignored and must not survive an ingest run.
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 REPO="https://github.com/anthropics/html-effectiveness.git"
 DIR=".upstream"
@@ -321,7 +321,7 @@ case "${1:-}" in
     fi
     ;;
   *)
-    echo "usage: ./upstream.sh {fetch|clean}" >&2
+    echo "usage: ./scripts/upstream.sh {fetch|clean}" >&2
     exit 2
     ;;
 esac
@@ -336,14 +336,14 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 fail=0
 
-./upstream.sh clean >/dev/null 2>&1
+./scripts/upstream.sh clean >/dev/null 2>&1
 
-./upstream.sh fetch >/dev/null 2>&1
+./scripts/upstream.sh fetch >/dev/null 2>&1
 if [ -d .upstream/.git ]; then echo "ok: fetch creates the clone"
 else echo "ASSERT FAIL: fetch did not create .upstream"; fail=1; fi
 
 # Fetching twice must not fail or re-clone.
-if ./upstream.sh fetch 2>&1 | grep -q "reusing"; then
+if ./scripts/upstream.sh fetch 2>&1 | grep -q "reusing"; then
   echo "ok: fetch is idempotent"
 else
   echo "ASSERT FAIL: second fetch did not reuse the clone"; fail=1
@@ -356,12 +356,12 @@ else
   echo "ASSERT FAIL: .upstream shows up in git status"; fail=1
 fi
 
-./upstream.sh clean >/dev/null 2>&1
+./scripts/upstream.sh clean >/dev/null 2>&1
 if [ ! -d .upstream ]; then echo "ok: clean removes the clone"
 else echo "ASSERT FAIL: clean left .upstream behind"; fail=1; fi
 
 # Cleaning twice must not fail.
-./upstream.sh clean >/dev/null 2>&1
+./scripts/upstream.sh clean >/dev/null 2>&1
 if [ $? -eq 0 ]; then echo "ok: clean is idempotent"
 else echo "ASSERT FAIL: second clean exited non-zero"; fail=1; fi
 
@@ -381,9 +381,9 @@ exit $fail
 Fixtures prove the checks work on material written to fail them. This step proves they work on the real thing:
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 python3 lib/checks.py .upstream/11-status-report.html
-./upstream.sh clean
+./scripts/upstream.sh clean
 ```
 
 Expected: numerous `raw hex` failures. Record the count — the spec predicts 37 outside `:root`, and this check counts hex inside `:root` too, since upstream carries no sentinel markers.
@@ -391,7 +391,7 @@ Expected: numerous `raw hex` failures. Record the count — the spec predicts 37
 - [ ] **Step 10: Run every test**
 
 ```bash
-chmod +x upstream.sh tests/test_upstream.sh
+chmod +x scripts/upstream.sh tests/test_upstream.sh
 ./tests/test_verify.sh && ./tests/test_upstream.sh
 ```
 
@@ -400,7 +400,7 @@ Expected: all assertions `ok`, and no `.upstream/` directory left behind.
 - [ ] **Step 11: Commit**
 
 ```bash
-git add verify.sh upstream.sh lib tests .gitignore
+git add scripts lib tests .gitignore
 git commit -m "feat(verify): add template checks and the upstream borrow
 
 Add verify.sh and lib/checks.py covering the three automatable
@@ -421,7 +421,7 @@ free of any path outside its own directory (decision 0006).
 [Confidence]    high
 [Scope-risk]    narrow
 [Reversibility] clean
-[Directive]     Every later task ends by running ./verify.sh, and
+[Directive]     Every later task ends by running ./scripts/verify.sh, and
                 every task that fetches also cleans.
 [Tested]        tests/test_verify.sh and tests/test_upstream.sh pass;
                 the raw-hex check fails a real upstream file as
@@ -709,7 +709,7 @@ def main():
     if not sources:
         raise SystemExit(
             f"no upstream sources in {UPSTREAM}/ — "
-            "run ./upstream.sh fetch first, and ./upstream.sh clean after"
+            "run ./scripts/upstream.sh fetch first, and ./scripts/upstream.sh clean after"
         )
 
     upstream_hexes = set()
@@ -734,7 +734,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: Borrow the clone and run the test to verify it fails**
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 python3 tests/test_conversion_rules.py
 ```
 
@@ -864,7 +864,7 @@ the single retained instance from step 4.
 
 ## 7. Verify
 
-    ./verify.sh templates/<NN-name>.html
+    ./scripts/verify.sh templates/<NN-name>.html
 
 All three checks must pass. Then open the file in a browser and confirm
 it reads correctly in both light and dark — the fourth check, which no
@@ -882,7 +882,7 @@ Expected: `PASS: N/N mapped`. If a color is reported unmapped, add a row for it 
 - [ ] **Step 6: Give the clone back**
 
 ```bash
-./upstream.sh clean
+./scripts/upstream.sh clean
 git status --porcelain
 ```
 
@@ -925,13 +925,13 @@ One file, end to end, before committing to the other nineteen. This is the cheap
 - Modify: `references/conversion-rules.md` (only if the pilot exposes a gap)
 
 **Interfaces:**
-- Consumes: `references/design-system.css`, `references/conversion-rules.md`, `verify.sh`.
+- Consumes: `references/design-system.css`, `references/conversion-rules.md`, `scripts/verify.sh`.
 - Produces: the first template, and a validated conversion procedure.
 
 - [ ] **Step 1: Borrow the clone and read the source in full**
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 cat .upstream/01-exploration-code-approaches.html
 ```
 
@@ -951,7 +951,7 @@ Apply `references/conversion-rules.md` steps 1 through 6. For this file specific
 - [ ] **Step 4: Run verification**
 
 ```bash
-./verify.sh templates/01-exploration-code-approaches.html
+./scripts/verify.sh templates/01-exploration-code-approaches.html
 ```
 
 Expected: `verify: all 1 file(s) passed`.
@@ -967,7 +967,7 @@ If any judgment during Step 3 was not covered by `conversion-rules.md`, add it n
 - [ ] **Step 7: Give the clone back**
 
 ```bash
-./upstream.sh clean
+./scripts/upstream.sh clean
 ```
 
 - [ ] **Step 8: Commit**
@@ -989,7 +989,7 @@ one marked instance.
 [Scope-risk]    narrow
 [Reversibility] clean
 [Directive]     Any rule gap found here is fixed before Task 5.
-[Tested]        ./verify.sh passes; both themes checked in a browser.
+[Tested]        ./scripts/verify.sh passes; both themes checked in a browser.
 [Not-tested]    Whether the procedure generalizes to files carrying
                 SVG fills, which Task 7 settles."
 ```
@@ -1014,7 +1014,7 @@ These five carry zero raw hex outside `:root`, so the color work stays a straigh
 - [ ] **Step 1: Borrow the clone, then convert each file**
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 ```
 
 For each of the five, apply `references/conversion-rules.md` steps 1 through 6 exactly as in Task 4. Capture each blob SHA with:
@@ -1035,7 +1035,7 @@ File-specific notes for rule 4:
 - [ ] **Step 2: Verify all six templates together**
 
 ```bash
-./verify.sh
+./scripts/verify.sh
 ```
 
 Expected: `verify: all 6 file(s) passed`.
@@ -1047,7 +1047,7 @@ Open all five new files in a browser, light then dark. `20-editor-prompt-tuner.h
 - [ ] **Step 4: Give the clone back**
 
 ```bash
-./upstream.sh clean
+./scripts/upstream.sh clean
 ```
 
 - [ ] **Step 5: Commit**
@@ -1069,7 +1069,7 @@ a flow needs two screens.
 [Scope-risk]    narrow
 [Reversibility] clean
 [Directive]     Heavier files follow in Tasks 6 and 7.
-[Tested]        ./verify.sh passes on all six; both themes checked by
+[Tested]        ./scripts/verify.sh passes on all six; both themes checked by
                 eye; the prompt tuner's re-render exercised.
 [Not-tested]    SVG attribute re-tokenization, which starts in Task 6."
 ```
@@ -1100,7 +1100,7 @@ Counts are raw hex outside `:root`, measured at `58c305b`. `04`, `13` and `09` c
 - [ ] **Step 1: Borrow the clone, then convert in ascending order of hex count**
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 ```
 
 Order: `17`, `12`, `07`, `14`, `04`, `19`, `09`, `13`, `18`, `15`, `03`. Ascending order means any weakness in the SVG mapping rule surfaces on a 4-hex file rather than a 14-hex one.
@@ -1124,7 +1124,7 @@ File-specific notes for rule 4:
 - [ ] **Step 2: Verify all seventeen templates together**
 
 ```bash
-./verify.sh
+./scripts/verify.sh
 ```
 
 Expected: `verify: all 17 file(s) passed`.
@@ -1148,7 +1148,7 @@ Pay particular attention to `03`'s severity tags and `12`'s timeline: both encod
 - [ ] **Step 5: Give the clone back**
 
 ```bash
-./upstream.sh clean
+./scripts/upstream.sh clean
 ```
 
 - [ ] **Step 6: Commit**
@@ -1173,7 +1173,7 @@ warning.
 [Scope-risk]    narrow
 [Reversibility] clean
 [Directive]     Only the three heavy files remain.
-[Tested]        ./verify.sh passes on all 17; seven interactive files
+[Tested]        ./scripts/verify.sh passes on all 17; seven interactive files
                 exercised in a browser; both themes checked.
 [Not-tested]    Long-run rendering on browsers other than the one
                 used for the eye check."
@@ -1195,7 +1195,7 @@ warning.
 - [ ] **Step 1: Borrow the clone, then convert `05-design-system.html`**
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 ```
 
 This file is a special case worth stating plainly: it is a page *about* a design system, so its swatches display colors as content. A swatch showing `#d97757` is not a themed surface — it is a sample of clay, and it must keep showing clay in both themes.
@@ -1237,7 +1237,7 @@ The figure sheet holds several independent illustrations. Keep two, not one: the
 - [ ] **Step 4: Verify all twenty templates**
 
 ```bash
-./verify.sh
+./scripts/verify.sh
 ```
 
 Expected: `verify: all 20 file(s) passed`.
@@ -1257,7 +1257,7 @@ The spec projects 4,000–5,000 lines from 11,611 upstream. Record the real numb
 - [ ] **Step 7: Give the clone back**
 
 ```bash
-./upstream.sh clean
+./scripts/upstream.sh clean
 ```
 
 - [ ] **Step 8: Commit**
@@ -1285,7 +1285,7 @@ page chrome around them uses Tier 2.
 [Scope-risk]    narrow
 [Reversibility] messy
 [Directive]     All 20 templates exist; wiring comes next.
-[Tested]        ./verify.sh passes on all 20; all three checked in
+[Tested]        ./scripts/verify.sh passes on all 20; all three checked in
                 both themes, with 10 checked attribute by attribute.
 [Not-tested]    Gradient rendering in browsers that treat stop-color
                 var() inheritance differently."
@@ -1297,14 +1297,14 @@ page chrome around them uses Tier 2.
 
 **Files:**
 - Create: `templates/MANIFEST.json`
-- Create: `update.sh`
+- Create: `scripts/update.sh`
 - Create: `lib/manifest.py`
 - Create: `lib/github.py`
 - Create: `tests/test_update.sh`
 
 **Interfaces:**
-- Consumes: the 20 templates and their provenance headers; `upstream.sh` from Task 1.
-- Produces: `update.sh` — read-only, needs no clone, exits 0 when everything is current, 1 when work is pending, 2 when the check itself could not run. `lib/manifest.py` exposes `load(path) -> dict`, `stamp(path, manifest) -> None`, and `compare(manifest, upstream_shas) -> dict` returning keys `unchanged`, `changed`, `new`, `removed`, each a sorted list of filenames. `lib/github.py` exposes `head_commit(repo) -> str` and `tree_blobs(repo, commit) -> dict[str, str]`.
+- Consumes: the 20 templates and their provenance headers; `scripts/upstream.sh` from Task 1.
+- Produces: `scripts/update.sh` — read-only, needs no clone, exits 0 when everything is current, 1 when work is pending, 2 when the check itself could not run. `lib/manifest.py` exposes `load(path) -> dict`, `stamp(path, manifest) -> None`, and `compare(manifest, upstream_shas) -> dict` returning keys `unchanged`, `changed`, `new`, `removed`, each a sorted list of filenames. `lib/github.py` exposes `head_commit(repo) -> str` and `tree_blobs(repo, commit) -> dict[str, str]`.
 
 Detection reads blob SHAs from the GitHub API rather than a clone (decision 0006). This was verified before the design was settled: `11-status-report.html` returns `764665143d3731ccb5e8978898bf7d7a5e46cc5f` from both the API and `git rev-parse`, so the comparison is unchanged.
 
@@ -1321,7 +1321,7 @@ fail=0
 
 # 1. A clean tree must stay clean after a run.
 before=$(git status --porcelain | sort)
-./update.sh >/dev/null 2>&1
+./scripts/update.sh >/dev/null 2>&1
 after=$(git status --porcelain | sort)
 if [ "$before" == "$after" ]; then
   echo "ok: update.sh does not write to the working tree"
@@ -1332,7 +1332,7 @@ else
 fi
 
 # 2. Against the pinned commit, everything must read as unchanged.
-if ./update.sh 2>&1 | grep -q "unchanged: 20"; then
+if ./scripts/update.sh 2>&1 | grep -q "unchanged: 20"; then
   echo "ok: all 20 files unchanged at the pinned commit"
 else
   echo "ASSERT FAIL: expected 20 unchanged files"
@@ -1347,7 +1347,7 @@ m = json.load(open("templates/MANIFEST.json"))
 m["files"][0]["upstream_blob_sha"] = "0" * 40
 json.dump(m, open("templates/MANIFEST.json", "w"), indent=2)
 PY
-./update.sh >/dev/null 2>&1
+./scripts/update.sh >/dev/null 2>&1
 if [ $? -eq 1 ]; then
   echo "ok: pending work exits non-zero"
 else
@@ -1359,7 +1359,7 @@ cp "$TMPDIR/manifest.bak" templates/MANIFEST.json
 # 4. A broken API endpoint must exit 2, not 1. Exit 1 means "drift
 #    found"; a wrapper must never read an outage as pending work.
 if GITHUB_API_BASE="https://api.github.com/repos/anthropics/does-not-exist-$$" \
-     ./update.sh >/dev/null 2>&1; then
+     ./scripts/update.sh >/dev/null 2>&1; then
   echo "ASSERT FAIL: unreachable endpoint should not exit 0"
   fail=1
 elif [ $? -eq 2 ]; then
@@ -1370,8 +1370,8 @@ else
 fi
 
 # 5. Detection must not need a clone.
-./upstream.sh clean >/dev/null 2>&1
-if ./update.sh >/dev/null 2>&1; [ $? -ne 2 ]; then
+./scripts/upstream.sh clean >/dev/null 2>&1
+if ./scripts/update.sh >/dev/null 2>&1; [ $? -ne 2 ]; then
   echo "ok: detection runs with no local clone"
 else
   echo "ASSERT FAIL: update.sh needs a clone it should not need"
@@ -1388,7 +1388,7 @@ chmod +x tests/test_update.sh
 ./tests/test_update.sh
 ```
 
-Expected: fails, `update.sh` does not exist.
+Expected: fails, `scripts/update.sh` does not exist.
 
 - [ ] **Step 3: Write `lib/manifest.py`**
 
@@ -1515,7 +1515,7 @@ The `truncated` guard matters: the API pages large trees, and a silently truncat
 The manifest is written once here, from the clone that is already present after Task 7. Afterwards only ingest mode writes it.
 
 ```bash
-./upstream.sh fetch
+./scripts/upstream.sh fetch
 python3 - <<'PY'
 import json, subprocess, datetime, pathlib, re
 
@@ -1550,12 +1550,12 @@ with open("templates/MANIFEST.json", "w", encoding="utf-8") as fh:
     fh.write("\n")
 print(f"wrote {len(entries)} entries at {commit[:7]}")
 PY
-./upstream.sh clean
+./scripts/upstream.sh clean
 ```
 
 Expected: `wrote 20 entries at 58c305b`.
 
-- [ ] **Step 6: Write `update.sh`**
+- [ ] **Step 6: Write `scripts/update.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -1569,7 +1569,7 @@ Expected: `wrote 20 entries at 58c305b`.
 #   1  upstream drifted, ingest mode has work
 #   2  the check itself could not run
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 python3 - <<'PY'
 import sys
@@ -1603,8 +1603,8 @@ for bucket in ("unchanged", "changed", "new", "removed"):
 pending = sum(len(result[b]) for b in ("changed", "new", "removed"))
 if pending:
     print(f"\nupdate: {pending} file(s) need ingest mode")
-    print("update: run ./upstream.sh fetch, convert per "
-          "references/conversion-rules.md, then ./upstream.sh clean")
+    print("update: run ./scripts/upstream.sh fetch, convert per "
+          "references/conversion-rules.md, then ./scripts/upstream.sh clean")
     sys.exit(1)
 print("\nupdate: everything current")
 PY
@@ -1615,7 +1615,7 @@ The empty-response guard is deliberate. An API change that returns a tree withou
 - [ ] **Step 7: Run the tests to verify they pass**
 
 ```bash
-chmod +x update.sh
+chmod +x scripts/update.sh
 ./tests/test_update.sh
 ```
 
@@ -1624,7 +1624,7 @@ Expected: five `ok:` lines, exit 0, and no `.upstream/` left behind.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add update.sh lib/manifest.py lib/github.py templates/MANIFEST.json tests/test_update.sh
+git add scripts/update.sh lib/manifest.py lib/github.py templates/MANIFEST.json tests/test_update.sh
 git commit -m "feat(update): add read-only upstream drift detection
 
 Add update.sh, which fetches upstream, enumerates every NN-*.html at
@@ -1739,21 +1739,21 @@ page without a template rather than forcing a bad fit.
    follow, not content to ship. No placeholder text survives.
 5. **Keep the machinery.** Interaction logic in the template works.
    Do not rewrite it.
-6. **Verify before handing it over.** Run `./verify.sh <file>` from the
+6. **Verify before handing it over.** Run `./scripts/verify.sh <file>` from the
    skill directory.
 
 ## Updating the templates
 
-`./update.sh` reports upstream drift by reading blob SHAs from the
+`./scripts/update.sh` reports upstream drift by reading blob SHAs from the
 GitHub API. It needs no local copy of upstream, is read-only, and is
 safe to run unattended. Exit 1 means work is pending; exit 2 means the
 check itself could not run.
 
 When it reports work:
 
-    ./upstream.sh fetch     # borrow a depth-1 clone at .upstream/
+    ./scripts/upstream.sh fetch     # borrow a depth-1 clone at .upstream/
     # convert per references/conversion-rules.md, stamp MANIFEST.json
-    ./upstream.sh clean     # give it back
+    ./scripts/upstream.sh clean     # give it back
 
 `.upstream/` is git-ignored and must not survive the run.
 
@@ -1845,9 +1845,9 @@ bracketed by fetch and clean. Everything else runs without a clone.
 ./tests/test_verify.sh && \
 ./tests/test_upstream.sh && \
 python3 tests/test_tokens.py && \
-./upstream.sh fetch && python3 tests/test_conversion_rules.py; rc=$?; \
-./upstream.sh clean && [ $rc -eq 0 ] && \
-./tests/test_update.sh && ./verify.sh
+./scripts/upstream.sh fetch && python3 tests/test_conversion_rules.py; rc=$?; \
+./scripts/upstream.sh clean && [ $rc -eq 0 ] && \
+./tests/test_update.sh && ./scripts/verify.sh
 ```
 
 Expected: every suite passes and `verify: all 20 file(s) passed`. Do not proceed past a failure — fix it and re-run.
@@ -1882,11 +1882,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   palette and a Tier 2 semantic layer carrying light and dark themes.
 - `references/conversion-rules.md`, the seven-step procedure for turning
   an upstream file into a template.
-- `update.sh`, a read-only upstream drift checker that reads blob SHAs
+- `scripts/update.sh`, a read-only upstream drift checker that reads blob SHAs
   from the GitHub API and needs no local copy of upstream.
-- `upstream.sh`, borrowing an ephemeral `--depth 1` clone into a
+- `scripts/upstream.sh`, borrowing an ephemeral `--depth 1` clone into a
   git-ignored `.upstream/` for the duration of an ingest run.
-- `verify.sh`, checking that every template parses, holds no external
+- `scripts/verify.sh`, checking that every template parses, holds no external
   reference, and carries no raw hex outside the token block.
 - `SKILL.md` with a genre-to-template selection table.
 ```
@@ -1922,6 +1922,6 @@ echo "mv $(pwd) ~/.claude/skills/"
 
 **Placeholder scan.** No TBDs. Every code step carries real code. The one deliberately open item is the `#b04a4a` judgment, which Task 3 resolves with a stated default rather than deferring it.
 
-**Type consistency.** `lib/checks.py` exposes `check_parses`, `check_no_external_refs`, `check_no_raw_hex_outside_tokens`, used under those names by `verify.sh` via `CHECKS`. `lib/manifest.py` exposes `load`, `stamp`, `compare`; `update.sh` calls `M.load` and `M.compare`, and `stamp` is reserved for ingest mode, which is agent work rather than a scripted task. `lib/github.py` exposes `head_commit`, `tree_blobs` and `UpstreamUnavailable`, all three used by `update.sh`. Tier 2 role names are identical in Task 2's CSS, Task 3's mapping table, and Task 9's rule 2. The sentinel spelling `/* TOKENS:BEGIN */` matches across `lib/checks.py`, `design-system.css` and `conversion-rules.md`. `.upstream/` is spelled identically in `upstream.sh`, `.gitignore`, every conversion task and `tests/test_upstream.sh`.
+**Type consistency.** `lib/checks.py` exposes `check_parses`, `check_no_external_refs`, `check_no_raw_hex_outside_tokens`, used under those names by `scripts/verify.sh` via `CHECKS`. `lib/manifest.py` exposes `load`, `stamp`, `compare`; `scripts/update.sh` calls `M.load` and `M.compare`, and `stamp` is reserved for ingest mode, which is agent work rather than a scripted task. `lib/github.py` exposes `head_commit`, `tree_blobs` and `UpstreamUnavailable`, all three used by `scripts/update.sh`. Tier 2 role names are identical in Task 2's CSS, Task 3's mapping table, and Task 9's rule 2. The sentinel spelling `/* TOKENS:BEGIN */` matches across `lib/checks.py`, `design-system.css` and `conversion-rules.md`. `.upstream/` is spelled identically in `scripts/upstream.sh`, `.gitignore`, every conversion task and `tests/test_upstream.sh`.
 
 **Path independence.** Re-checked after decision 0006: no task references a path outside the skill directory. The only absolute path left in the plan is the install target `~/.claude/skills/` in Task 10.

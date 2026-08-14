@@ -17,11 +17,11 @@ holds the design record only:
 | Path | Contents |
 |---|---|
 | `docs/specs/` | The approved design spec |
-| `docs/decisions/` | Five decision records, `0001` through `0005` |
+| `docs/decisions/` | Six decision records, `0001` through `0006` |
 | `docs/plans/` | The ten-task implementation plan |
 
-`SKILL.md`, `templates/`, `references/`, `update.sh`, `upstream.sh` and
-`verify.sh` do not exist yet. The plan builds them. Start at
+`SKILL.md`, `templates/`, `references/`, `scripts/` and `lib/` do not
+exist yet. The plan builds them. Start at
 `docs/plans/2026-08-14-writing-standalone-html.md`.
 
 ## What it will do
@@ -83,7 +83,7 @@ onto the wrong genre is worse than no template.
 ## Keeping up with upstream
 
 ```bash
-./update.sh
+./scripts/update.sh
 ```
 
 Reads every upstream file's blob SHA from the GitHub API, compares them
@@ -103,9 +103,9 @@ contents, which the API path deliberately does not fetch, so it borrows
 a clone for the duration:
 
 ```bash
-./upstream.sh fetch     # depth-1 clone into .upstream/
+./scripts/upstream.sh fetch     # depth-1 clone into .upstream/
 # convert per references/conversion-rules.md, stamp MANIFEST.json
-./upstream.sh clean     # delete it again
+./scripts/upstream.sh clean     # delete it again
 ```
 
 `.upstream/` is git-ignored and is not meant to survive the run. A clone
@@ -115,7 +115,7 @@ copy of upstream that can go stale without anyone noticing.
 ## Verifying
 
 ```bash
-./verify.sh
+./scripts/verify.sh
 ```
 
 Checks every template: it parses, it holds no external reference, and

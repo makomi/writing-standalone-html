@@ -210,7 +210,7 @@ repeat-block boundary falls, or which semantic role a given hex literal
 plays. Regex-stripping hand-written HTML mangles it. So the work splits:
 
 - **Deterministic bookkeeping** — diffing upstream, tracking blob SHAs,
-  stamping the manifest — is script work (`update.sh`, section 6).
+  stamping the manifest — is script work (`scripts/update.sh`, section 6).
 - **Semantic conversion** — stripping to one instance, re-tokenizing
   colors, writing the provenance header — is skill work, done by the
   agent under the written rules in `references/conversion-rules.md`
@@ -242,12 +242,21 @@ writing-standalone-html/          own git repo, matching the user's
                                    header
     MANIFEST.json                 upstream commit + per-file blob SHA +
                                    conversion date
-  update.sh
-  upstream.sh
-  verify.sh
+  scripts/
+    update.sh                     drift check over the GitHub API
+    upstream.sh                   borrow and return the ephemeral clone
+    verify.sh                     mechanical template checks
+  lib/                            Python stdlib helpers imported by the
+                                   scripts: checks, manifest, github
+  tests/
   .upstream/                      ephemeral --depth 1 clone, git-ignored,
                                    present only during an ingest run
 ```
+
+Executables live in `scripts/`; importable modules live in `lib/`. Every
+script resolves the repo root with `cd "$(dirname "$0")/.."`, so all
+paths inside them stay relative to the skill directory regardless of
+where the script is invoked from.
 
 File purposes:
 
@@ -268,16 +277,16 @@ File purposes:
 - `templates/MANIFEST.json` — machine-readable record tying every
   template back to the exact upstream blob it was converted from
   (schema in section 6.2).
-- `update.sh` — deterministic drift checker over the GitHub API
+- `scripts/update.sh` — deterministic drift checker over the GitHub API
   (section 6.1). Needs no local copy of upstream.
-- `upstream.sh` — `fetch` borrows an ephemeral clone into `.upstream/`,
+- `scripts/upstream.sh` — `fetch` borrows an ephemeral clone into `.upstream/`,
   `clean` deletes it (section 6.3).
-- `verify.sh` — mechanical template validator (section 7).
+- `scripts/verify.sh` — mechanical template validator (section 7).
 
 **Provenance header.** Every template file opens with an HTML comment
 recording: upstream repo URL, upstream commit SHA, source filename
 upstream, and that source file's blob SHA at conversion time. This is
-what makes `update.sh`'s drift detection possible — it diffs the
+what makes `scripts/update.sh`'s drift detection possible — it diffs the
 manifest's stored blob SHA against upstream's current blob SHA per file.
 
 ## 6. Update and maintenance flow
@@ -313,7 +322,7 @@ ls-tree` would produce, without the clone.
 Unauthenticated calls are limited to 60 per hour and this path spends
 two. That suits a scheduled check; it does not suit tight polling.
 
-`update.sh` never edits a template, and it never writes
+`scripts/update.sh` never edits a template, and it never writes
 `MANIFEST.json` either — including `checked_at`. Writing on a read path
 would make a cron run dirty the git tree and produce spurious diffs.
 `checked_at` is stamped by ingest mode alongside the rest of the
@@ -343,14 +352,14 @@ half (D4).
 Fields:
 
 - `upstream_repo`, `upstream_commit` — top-level pin used as the
-  baseline for the next `update.sh` run. Full 40-character SHA, not the
+  baseline for the next `scripts/update.sh` run. Full 40-character SHA, not the
   short form, so the pin stays unambiguous as upstream grows.
 - `checked_at` — timestamp of the last ingest run. Written by ingest
-  mode only; `update.sh` reads it and never updates it (section 6.1).
+  mode only; `scripts/update.sh` reads it and never updates it (section 6.1).
 - `files[].template` — filename in `templates/`.
 - `files[].upstream_source` — corresponding filename upstream (usually
   identical, kept separate in case of a rename).
-- `files[].upstream_blob_sha` — the git blob SHA `update.sh` diffs
+- `files[].upstream_blob_sha` — the git blob SHA `scripts/update.sh` diffs
   against on every run.
 - `files[].converted_at` — date this template was last (re)converted by
   the skill's ingest mode.
@@ -363,11 +372,11 @@ Fields:
 
 ### 6.3 Ingest mode
 
-Runs when `update.sh` reports non-empty changed/new/removed lists.
+Runs when `scripts/update.sh` reports non-empty changed/new/removed lists.
 Conversion needs file contents, which the API path deliberately does not
 fetch, so ingest borrows a clone for the duration and gives it back.
 
-1. `./upstream.sh fetch` clones upstream `--depth 1` into `.upstream/`
+1. `./scripts/upstream.sh fetch` clones upstream `--depth 1` into `.upstream/`
    inside the skill folder, prints the path and commit, and exits.
    `.upstream/` is git-ignored.
 2. For each named file, the skill converts it following
@@ -378,7 +387,7 @@ fetch, so ingest borrows a clone for the duration and gives it back.
    template is not auto-deleted.
 4. `MANIFEST.json` is stamped with the new blob SHAs, `converted_at`
    dates, `raw_hex_count_at_conversion` values, and `checked_at`.
-5. `./upstream.sh clean` deletes `.upstream/`.
+5. `./scripts/upstream.sh clean` deletes `.upstream/`.
 
 The clone is ephemeral by design (decision 0006). Creating it per run
 costs about 860 KB and a few seconds, and removes the failure mode where
@@ -388,7 +397,7 @@ cannot reach a commit.
 
 ## 7. Verification
 
-`verify.sh` runs three mechanical checks against every template:
+`scripts/verify.sh` runs three mechanical checks against every template:
 
 1. **Parses as HTML** — no malformed markup.
 2. **Zero external references** — no CDN, no external CSS/JS/fonts/
@@ -415,13 +424,13 @@ the current ingest run — not to the full set on every check.
   `~/.claude/skills/`. This is a manual step outside the skill's own
   automation.
 
-- **Detection needs the network and a quota.** `update.sh` spends two
+- **Detection needs the network and a quota.** `scripts/update.sh` spends two
   unauthenticated API calls against a limit of 60 per hour. A rate
   limit, an outage or a malformed response exits 2, never 1, so a
   wrapper never mistakes a broken checker for a clean result. Anything
   polling more than a few times an hour needs an authenticated token.
 
-- **Upstream restructuring risk.** `update.sh` detects a changed blob
+- **Upstream restructuring risk.** `scripts/update.sh` detects a changed blob
   SHA but not the *size* of the change. If upstream heavily restructures
   a file — new layout, new interaction model, not just a copy edit —
   re-conversion is effectively a rewrite, not a patch. The manifest
@@ -441,7 +450,7 @@ the current ingest run — not to the full set on every check.
   will not maintain one. Every future upstream change that touches color
   usage — a new component, a new state color — needs a corresponding
   dark-mode judgment call on this project's side, indefinitely. Upstream
-  drift detection (`update.sh`) does not know whether a change affects
+  drift detection (`scripts/update.sh`) does not know whether a change affects
   color usage; every "changed upstream" file must be checked for that
   regardless of what else changed.
 
@@ -456,6 +465,6 @@ authoritative; this list is an index.
 | D1 | Trigger only on the 20 named genres | `0001 - Narrow the trigger to the twenty known genres.md` |
 | D2 | Templates keep a skeleton plus one worked instance | `0002 - Keep a skeleton plus one worked instance.md` |
 | D3 | Two-tier tokens; we add and maintain dark mode | `0003 - Adopt a two-tier token architecture and maintain dark mode.md` |
-| D4 | `update.sh` does bookkeeping, ingest mode does semantics | `0004 - Split conversion between script and agent.md` |
+| D4 | `scripts/update.sh` does bookkeeping, ingest mode does semantics | `0004 - Split conversion between script and agent.md` |
 | D5 | Build outside `~/.claude/skills/`, install by hand | `0005 - Install the skill manually into the skills directory.md` |
 | D6 | Detect drift over the GitHub API; clone only during ingest | `0006 - Detect drift over the API and clone only on demand.md` |
