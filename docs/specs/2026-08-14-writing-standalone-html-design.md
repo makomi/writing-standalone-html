@@ -22,9 +22,13 @@ standalone HTML file" with no genre match does not trigger this skill.
 ## 2. Source and licensing
 
 Templates are derived from `anthropics/html-effectiveness`
-(https://github.com/anthropics/html-effectiveness), MIT licensed, cloned
-locally at `/home/data/home-dir/dev/0_TEMP/html-effectiveness`, commit
-`58c305be97f47b26b678f2c07dec01d4242268ec`.
+(https://github.com/anthropics/html-effectiveness), MIT licensed,
+pinned at commit `58c305be97f47b26b678f2c07dec01d4242268ec`.
+
+The skill keeps no permanent copy of upstream. Drift detection reads
+blob SHAs from the GitHub API, and conversion clones into a git-ignored
+`.upstream/` inside the skill folder and deletes it afterwards
+(section 6, decision 0006).
 
 Upstream ships 20 numbered `.html` files plus an `index.html` gallery,
 11,611 lines total. All sample data upstream is fictional; the
@@ -239,7 +243,10 @@ writing-standalone-html/          own git repo, matching the user's
     MANIFEST.json                 upstream commit + per-file blob SHA +
                                    conversion date
   update.sh
+  upstream.sh
   verify.sh
+  .upstream/                      ephemeral --depth 1 clone, git-ignored,
+                                   present only during an ingest run
 ```
 
 File purposes:
@@ -261,7 +268,10 @@ File purposes:
 - `templates/MANIFEST.json` — machine-readable record tying every
   template back to the exact upstream blob it was converted from
   (schema in section 6.2).
-- `update.sh` — deterministic drift checker (section 6.1).
+- `update.sh` — deterministic drift checker over the GitHub API
+  (section 6.1). Needs no local copy of upstream.
+- `upstream.sh` — `fetch` borrows an ephemeral clone into `.upstream/`,
+  `clean` deletes it (section 6.3).
 - `verify.sh` — mechanical template validator (section 7).
 
 **Provenance header.** Every template file opens with an HTML comment
@@ -274,19 +284,34 @@ manifest's stored blob SHA against upstream's current blob SHA per file.
 
 ### 6.1 update.sh contract
 
-Deterministic, no model involved, safe to run from cron.
+Deterministic, no model involved, safe to run from cron. Needs no
+local copy of upstream and touches nothing outside the skill folder.
 
-1. Fetch upstream `anthropics/html-effectiveness` at its current HEAD.
-2. Enumerate every `NN-*.html` at that HEAD — not the 20 recorded in
-   the manifest. Enumerating the manifest instead would make a newly
-   added upstream file invisible, which defeats the purpose.
-3. Compare each file's current blob SHA against the SHA recorded in
+1. Resolve upstream HEAD: `GET /repos/anthropics/html-effectiveness/
+   commits?per_page=1` returns the current commit SHA.
+2. Enumerate the tree: `GET /repos/anthropics/html-effectiveness/
+   git/trees/<commit>` returns every path with its blob SHA. Keep the
+   entries matching `NN-*.html`.
+3. Enumerate from that response, never from the manifest. Reading the
+   manifest's 20 known files instead would make a newly added upstream
+   file invisible, which defeats the purpose.
+4. Compare each blob SHA against the SHA recorded in
    `templates/MANIFEST.json`, matching on `files[].upstream_source`.
-4. Print four lists: unchanged, changed upstream, new upstream (present
+5. Print four lists: unchanged, changed upstream, new upstream (present
    at HEAD, absent from the manifest), removed upstream (present in the
    manifest, absent at HEAD).
-5. Exit non-zero when any list other than "unchanged" is non-empty
-   (work is pending).
+6. Exit 1 when any list other than "unchanged" is non-empty. Exit 2
+   when the check itself could not run — network failure, rate limit, a
+   malformed response. The two codes must stay distinct so a wrapper can
+   tell pending work from a broken checker.
+
+The API returns real git blob SHAs, verified against a local clone:
+`11-status-report.html` reads `764665143d3731ccb5e8978898bf7d7a5e46cc5f`
+from both. So the comparison is identical to the one a local `git
+ls-tree` would produce, without the clone.
+
+Unauthenticated calls are limited to 60 per hour and this path spends
+two. That suits a scheduled check; it does not suit tight polling.
 
 `update.sh` never edits a template, and it never writes
 `MANIFEST.json` either — including `checked_at`. Writing on a read path
@@ -339,15 +364,27 @@ Fields:
 ### 6.3 Ingest mode
 
 Runs when `update.sh` reports non-empty changed/new/removed lists.
+Conversion needs file contents, which the API path deliberately does not
+fetch, so ingest borrows a clone for the duration and gives it back.
 
-1. For each named file, the skill converts it following
+1. `./upstream.sh fetch` clones upstream `--depth 1` into `.upstream/`
+   inside the skill folder, prints the path and commit, and exits.
+   `.upstream/` is git-ignored.
+2. For each named file, the skill converts it following
    `references/conversion-rules.md`: strip repeated siblings to one
    marked instance (section 4.1), re-tokenize colors to Tier 2 roles
    (section 3.3), write the provenance header (section 5).
-2. Removed-upstream files are flagged for a human decision — the
+3. Removed-upstream files are flagged for a human decision — the
    template is not auto-deleted.
-3. On completion, `MANIFEST.json` is stamped with the new blob SHAs,
-   `converted_at` dates, and `raw_hex_count_at_conversion` values.
+4. `MANIFEST.json` is stamped with the new blob SHAs, `converted_at`
+   dates, `raw_hex_count_at_conversion` values, and `checked_at`.
+5. `./upstream.sh clean` deletes `.upstream/`.
+
+The clone is ephemeral by design (decision 0006). Creating it per run
+costs about 860 KB and a few seconds, and removes the failure mode where
+a stale local clone yields stale blob SHAs with full confidence. The
+test suite fails while `.upstream/` exists, so an un-cleaned clone
+cannot reach a commit.
 
 ## 7. Verification
 
@@ -377,6 +414,12 @@ the current ingest run — not to the full set on every check.
   installs it by moving or symlinking that directory into
   `~/.claude/skills/`. This is a manual step outside the skill's own
   automation.
+
+- **Detection needs the network and a quota.** `update.sh` spends two
+  unauthenticated API calls against a limit of 60 per hour. A rate
+  limit, an outage or a malformed response exits 2, never 1, so a
+  wrapper never mistakes a broken checker for a clean result. Anything
+  polling more than a few times an hour needs an authenticated token.
 
 - **Upstream restructuring risk.** `update.sh` detects a changed blob
   SHA but not the *size* of the change. If upstream heavily restructures
@@ -415,3 +458,4 @@ authoritative; this list is an index.
 | D3 | Two-tier tokens; we add and maintain dark mode | `0003 - Adopt a two-tier token architecture and maintain dark mode.md` |
 | D4 | `update.sh` does bookkeeping, ingest mode does semantics | `0004 - Split conversion between script and agent.md` |
 | D5 | Build outside `~/.claude/skills/`, install by hand | `0005 - Install the skill manually into the skills directory.md` |
+| D6 | Detect drift over the GitHub API; clone only during ingest | `0006 - Detect drift over the API and clone only on demand.md` |

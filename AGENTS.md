@@ -12,11 +12,11 @@ tooling that keeps them synchronized with upstream
 Read before changing anything:
 
 1. `docs/specs/2026-08-14-writing-standalone-html-design.md` — the design
-2. `docs/decisions/` — five decision records with the alternatives rejected
-3. `docs/plan/2026-08-14-writing-standalone-html.md` — the ten-task build
+2. `docs/decisions/` — six decision records with the alternatives rejected
+3. `docs/plans/2026-08-14-writing-standalone-html.md` — the ten-task build
 
 If a change contradicts a decision record, that is a new decision. Write
-`docs/decisions/0006 - ....md`, mark the old record superseded, and say
+`docs/decisions/0007 - ....md`, mark the old record superseded, and say
 so in the commit body. Do not silently reverse one.
 
 ## Invariants
@@ -42,6 +42,11 @@ Breaking any of these breaks the point of the project.
 6. **Interaction logic is kept, not rewritten.** Keyboard navigation,
    drag-and-drop, tab switching and live re-render come from upstream
    working. Do not refactor or simplify them.
+7. **Nothing references a path outside this directory.** Drift
+   detection reads the GitHub API. Anything needing upstream file
+   contents runs `./upstream.sh fetch`, works in `.upstream/`, and runs
+   `./upstream.sh clean`. Never hardcode a clone living elsewhere on
+   the machine, and never leave `.upstream/` behind.
 
 ## Running the checks
 
@@ -51,9 +56,13 @@ No install step. Python 3 standard library only.
 ./verify.sh                      # all templates
 ./verify.sh templates/09-*.html  # one file
 ./tests/test_verify.sh           # the checker's own tests
+./tests/test_upstream.sh         # borrow and return the clone
 python3 tests/test_tokens.py     # token roles and WCAG contrast
-python3 tests/test_conversion_rules.py
-./tests/test_update.sh
+./tests/test_update.sh           # drift classification and exit codes
+
+# This one reads upstream sources, so bracket it:
+./upstream.sh fetch && python3 tests/test_conversion_rules.py; \
+  rc=$?; ./upstream.sh clean; exit $rc
 ```
 
 Do not add a dependency, a package manager, or a virtualenv. The repo

@@ -18,11 +18,11 @@ holds the design record only:
 |---|---|
 | `docs/specs/` | The approved design spec |
 | `docs/decisions/` | Five decision records, `0001` through `0005` |
-| `docs/plan/` | The ten-task implementation plan |
+| `docs/plans/` | The ten-task implementation plan |
 
-`SKILL.md`, `templates/`, `references/`, `update.sh` and `verify.sh` do
-not exist yet. The plan builds them. Start at
-`docs/plan/2026-08-14-writing-standalone-html.md`.
+`SKILL.md`, `templates/`, `references/`, `update.sh`, `upstream.sh` and
+`verify.sh` do not exist yet. The plan builds them. Start at
+`docs/plans/2026-08-14-writing-standalone-html.md`.
 
 ## What it will do
 
@@ -86,16 +86,31 @@ onto the wrong genre is worse than no template.
 ./update.sh
 ```
 
-Fetches upstream, compares every file's blob SHA against
-`templates/MANIFEST.json`, and prints four lists: unchanged, changed,
-new, removed. It is read-only — it never edits a template and never
-writes the manifest — so it is safe to run unattended. It exits
-non-zero when work is pending.
+Reads every upstream file's blob SHA from the GitHub API, compares them
+against `templates/MANIFEST.json`, and prints four lists: unchanged,
+changed, new, removed. It keeps no copy of upstream and touches nothing
+outside this directory, so it is safe to run unattended.
 
-Conversion itself stays manual, because it needs judgment a script
-cannot supply: which instance is representative, where a repeat
-boundary falls, and which semantic role a given color plays. When
-`update.sh` reports work, follow `references/conversion-rules.md`.
+Exit codes are distinct on purpose: `1` means upstream drifted and there
+is work to do, `2` means the check itself could not run — no network, a
+rate limit, a malformed response. A wrapper that conflates them would
+read an outage as a clean result.
+
+Conversion stays manual, because it needs judgment a script cannot
+supply: which instance is representative, where a repeat boundary falls,
+and which semantic role a given color plays. It also needs file
+contents, which the API path deliberately does not fetch, so it borrows
+a clone for the duration:
+
+```bash
+./upstream.sh fetch     # depth-1 clone into .upstream/
+# convert per references/conversion-rules.md, stamp MANIFEST.json
+./upstream.sh clean     # delete it again
+```
+
+`.upstream/` is git-ignored and is not meant to survive the run. A clone
+is 860 KB and takes seconds, which is cheaper than a permanent second
+copy of upstream that can go stale without anyone noticing.
 
 ## Verifying
 
