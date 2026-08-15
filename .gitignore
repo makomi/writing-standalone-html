@@ -8,3 +8,5 @@ __pycache__/
 HANDOFF.md
 docs/HANDOFF.md
 TASKS.md
+.gstack/
+.claude/
