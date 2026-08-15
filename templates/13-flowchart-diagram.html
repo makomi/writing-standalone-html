@@ -1,0 +1,441 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    13-flowchart-diagram.html
+  blob:      85abfd474921f1d01babe9c84b4e784eb5d569eb
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) The chart keeps one node of each kind rather than one
+             node: a start terminal, a process step, a decision gate, a
+             failure branch and a success terminal. The five node
+             classes look different and a flowchart with one box is not
+             a flowchart. The twelve-node pipeline collapses to those
+             five, and the geometry is redrawn to fit — coordinates are
+             layout, not content, so they are recomputed rather than
+             kept.
+             (2) The same argument keeps all three edge kinds — plain,
+             yes and no — and all four legend chips.
+             (3) The three arrowhead markers carried their colour in a
+             fill attribute, and the two edge labels in a fill
+             attribute of their own. All five are lifted into classes:
+             .arrow-plain, .arrow-yes, .arrow-no, and .lbl.no.
+             (4) The rgba fills on the ok and bad nodes, and on their
+             legend chips, became color-mix over var(--surface) at
+             upstream's own strengths.
+             (5) Prose and data specific to the fictional pipeline (page
+             title, lead, every node label, the whole DETAIL map) are
+             replaced with neutral placeholders. The detail panel keeps
+             one entry per surviving node so the click-to-inspect
+             behaviour still has something to show.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annotated flowchart</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 96px;
+  }
+  .sheet { max-width: 980px; margin: 0 auto; }
+
+  header { margin-bottom: 40px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+  }
+  .lead {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 640px;
+  }
+  .lead code { font-family: var(--mono); font-size: 13px; }
+
+  /* ── layout ───────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 32px;
+    align-items: start;
+  }
+  @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
+
+  /* ── chart ────────────────────────────── */
+  .canvas {
+    border: var(--border-width) solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 28px;
+    overflow-x: auto;
+  }
+  svg.flow { display: block; width: 100%; height: auto; }
+
+  .flow text {
+    font-family: var(--mono);
+    font-size: 12px;
+    fill: var(--text);
+    pointer-events: none;
+  }
+  .flow .sub { font-size: 10px; fill: var(--text-muted); }
+  .flow .lbl { font-size: 10px; fill: var(--text-muted); }
+  .flow .lbl.no { fill: var(--danger); }
+
+  .arrow-plain { fill: var(--border-strong); }
+  .arrow-yes   { fill: var(--ok); }
+  .arrow-no    { fill: var(--danger); }
+
+  .node rect       { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; rx: 8; }
+  .node.term rect  { fill: var(--surface-sunken); rx: 22; }
+  .node.gate path  { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .node.ok rect    { fill: color-mix(in srgb, var(--ok) 12%, var(--surface)); stroke: var(--ok); }
+  .node.bad rect   { fill: color-mix(in srgb, var(--danger) 10%, var(--surface)); stroke: var(--danger); }
+
+  .node { cursor: pointer; transition: transform 120ms ease; }
+  .node:hover { transform: translateY(-1px); }
+  .node.active rect,
+  .node.active path { stroke: var(--accent); stroke-width: 2; }
+
+  .edge       { stroke: var(--border-strong); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+  .edge.no    { stroke: var(--danger); stroke-dasharray: 4 4; marker-end: url(#arrow-no); }
+  .edge.yes   { stroke: var(--ok); marker-end: url(#arrow-yes); }
+
+  /* ── side panel ───────────────────────── */
+  aside {
+    position: sticky;
+    top: 24px;
+    border: var(--border-width) solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 20px 20px 22px;
+  }
+  aside .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  aside h3 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 19px;
+    margin-bottom: 6px;
+  }
+  aside .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  aside p {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  aside pre {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.55;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-row);
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+
+  /* ── legend ───────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .chip { width: 22px; height: 14px; border: var(--border-width) solid var(--border); border-radius: 4px; background: var(--surface); }
+  .chip.gate { transform: rotate(45deg); width: 12px; height: 12px; border-radius: 2px; }
+  .chip.ok   { background: color-mix(in srgb, var(--ok) 12%, var(--surface)); border-color: var(--ok); }
+  .chip.bad  { background: color-mix(in srgb, var(--danger) 10%, var(--surface)); border-color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div class="eyebrow">Category &middot; Flowchart</div>
+    <h1>What happens when the process runs</h1>
+    <p class="lead">
+      Two sentences saying which process is drawn, which files or
+      systems it was read from, and that clicking a step opens its
+      detail on the right.
+    </p>
+  </header>
+
+  <div class="layout">
+
+    <div>
+      <div class="canvas">
+        <svg class="flow" viewBox="0 0 620 360">
+          <defs>
+            <!-- repeat per edge kind -->
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path class="arrow-plain" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+            <marker id="arrow-no" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path class="arrow-no" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+            <marker id="arrow-yes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path class="arrow-yes" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+          </defs>
+
+          <!-- edges: one of each kind -->
+          <path class="edge" d="M310,56 L310,92"/>
+          <path class="edge" d="M310,140 L310,176"/>
+          <path class="edge yes" d="M310,240 L310,282"/>
+          <text class="lbl" x="320" y="266">yes</text>
+          <path class="edge no" d="M268,208 C190,208 130,208 130,142"/>
+          <text class="lbl no" x="120" y="180">no → branch</text>
+
+          <!-- nodes: one of each kind -->
+          <g class="node term" data-k="start">
+            <rect x="230" y="12" width="160" height="44"/>
+            <text x="310" y="38" text-anchor="middle">Start</text>
+          </g>
+
+          <g class="node" data-k="step">
+            <rect x="210" y="92" width="200" height="48"/>
+            <text x="310" y="112" text-anchor="middle">Process step</text>
+            <text class="sub" x="310" y="128" text-anchor="middle">duration &middot; where it runs</text>
+          </g>
+
+          <g class="node gate" data-k="gate">
+            <path d="M310,176 L352,208 L310,240 L268,208 Z"/>
+            <text x="310" y="212" text-anchor="middle">ok?</text>
+          </g>
+
+          <g class="node bad" data-k="branch">
+            <rect x="40" y="92" width="180" height="48"/>
+            <text x="130" y="112" text-anchor="middle">Failure branch</text>
+            <text class="sub" x="130" y="128" text-anchor="middle">what it does instead</text>
+          </g>
+
+          <g class="node ok term" data-k="done">
+            <rect x="230" y="282" width="160" height="44"/>
+            <text x="310" y="309" text-anchor="middle">Complete</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <!-- repeat per node kind -->
+        <span><i class="chip"></i> process step</span>
+        <span><i class="chip gate"></i> decision</span>
+        <span><i class="chip ok"></i> terminal success</span>
+        <span><i class="chip bad"></i> failure path</span>
+      </div>
+    </div>
+
+    <aside id="panel">
+      <div class="hint">Click a step in the chart →</div>
+      <h3 id="p-title">Start</h3>
+      <div class="meta" id="p-meta">trigger &middot; 0s</div>
+      <p id="p-body">What sets the process off, and what does not.</p>
+      <pre id="p-code">the trigger, as configured</pre>
+    </aside>
+
+  </div>
+</div>
+
+<script>
+const DETAIL = {
+  // repeat per node, keyed by its data-k
+  start: {
+    title: "Start",
+    meta: "trigger · 0s",
+    body: "What sets the process off, and what does not.",
+    code: "the trigger, as configured"
+  },
+  step: {
+    title: "Process step",
+    meta: "where it runs · how long",
+    body: "What the step does, and the one thing about it worth knowing before reading the next box.",
+    code: "the command or config the step runs"
+  },
+  gate: {
+    title: "Decision",
+    meta: "decision",
+    body: "What is compared, and what happens to each branch. Name the condition rather than describing it.",
+    code: "the condition, as written"
+  },
+  branch: {
+    title: "Failure branch",
+    meta: "side-effect · duration",
+    body: "What runs when the gate fails, who hears about it, and whether the process stops here.",
+    code: "the notification or revert step"
+  },
+  done: {
+    title: "Complete",
+    meta: "terminal · total duration",
+    body: "What is true once the process finishes, stated as the state a reader can check.",
+    code: "the end state"
+  }
+};
+
+const nodes = document.querySelectorAll(".node");
+const T = document.getElementById("p-title");
+const M = document.getElementById("p-meta");
+const B = document.getElementById("p-body");
+const C = document.getElementById("p-code");
+
+nodes.forEach(n => {
+  n.addEventListener("click", () => {
+    nodes.forEach(x => x.classList.remove("active"));
+    n.classList.add("active");
+    const d = DETAIL[n.dataset.k];
+    if (!d) return;
+    T.textContent = d.title;
+    M.textContent = d.meta;
+    B.innerHTML = d.body;
+    C.textContent = d.code;
+  });
+});
+document.querySelector('.node[data-k="start"]').classList.add("active");
+</script>
+</body>
+</html>

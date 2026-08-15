@@ -1,0 +1,534 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    04-code-understanding.html
+  blob:      495513148f5a676099b725dd06ed110ff420a0b8
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) The flow diagram keeps all five boxes and four arrows.
+             They are repeated siblings, but a path drawn with one node
+             is not a path; the labels are neutralized instead and one
+             group carries the repeat comment.
+             (2) The arrowhead marker carried fill="#87867F" as an
+             attribute, which cannot take a var(). It is lifted into an
+             .arrow-head class next to the .arrow rule it belongs with.
+             (3) Upstream's code foreground is #E8E6DC, one digit from
+             this project's --code-text (#e8e6de). Collapsed to the
+             token, as rule "everything else" step 1 prescribes.
+             (4) The walkthrough keeps two steps, one plain and one
+             .hot, because the highlighted step is a different
+             treatment rather than another instance of the same one.
+             The .hot step keeps its snippet open, which is also what
+             makes the one-open-at-a-time script visible on load.
+             (5) Prose specific to the fictional codebase (page title,
+             summary, every step body and location, the diagram labels,
+             the key-file list, the gotchas, the code snippets) is
+             replaced with neutral placeholders. The snippets keep
+             their syntax spans so the highlighting classes stay
+             demonstrated.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code walkthrough</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    padding: 48px 24px 80px;
+  }
+
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 40px;
+  }
+
+  @media (max-width: 960px) {
+    .page { grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    grid-column: 1 / -1;
+    margin-bottom: 8px;
+  }
+
+  .repo-line {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 1.25;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .summary {
+    max-width: 760px;
+    font-size: 15.5px;
+  }
+  .summary code { font-family: var(--mono); font-size: 13px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--text);
+    margin: 36px 0 16px;
+  }
+
+  /* ---------- Diagram ---------- */
+  .diagram-panel {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  svg.flow { display: block; max-width: 100%; }
+  .flow text {
+    font-family: var(--mono);
+    font-size: 12px;
+    fill: var(--text);
+  }
+  .flow .sub { font-size: 10px; fill: var(--text-muted); }
+  .flow .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .flow .box.hot { fill: color-mix(in srgb, var(--accent) 10%, var(--surface)); stroke: var(--accent); }
+  .flow .arrow { stroke: var(--border-strong); stroke-width: 1.5; fill: none; }
+  .flow .arrow-head { fill: var(--border-strong); }
+
+  /* ---------- Walkthrough ---------- */
+  .step {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 18px;
+    padding: 20px 0;
+    border-bottom: var(--border-width) solid var(--surface-sunken);
+  }
+  .step:last-of-type { border-bottom: none; }
+
+  .badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--surface-sunken);
+    border: var(--border-width) solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-weight: 600;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .step.hot .badge {
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .step-loc {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .step-loc .range { color: var(--text-muted); }
+
+  .step-body p { margin-bottom: 10px; }
+
+  details.snippet { margin-top: 6px; }
+  details.snippet summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    user-select: none;
+  }
+  details.snippet summary::-webkit-details-marker { display: none; }
+  details.snippet summary::before {
+    content: "▸";
+    font-size: 10px;
+    transition: transform 0.15s ease;
+  }
+  details.snippet[open] summary::before { transform: rotate(90deg); }
+
+  pre.code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    border-radius: var(--radius-row);
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+  pre.code .dim { color: var(--code-muted); }
+  pre.code .kw  { color: var(--code-kw); }
+  pre.code .str { color: var(--code-str); }
+
+  /* ---------- Sidebar ---------- */
+  aside {
+    position: sticky;
+    top: 24px;
+    align-self: start;
+  }
+
+  .panel {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+
+  .panel h3 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .key-files { list-style: none; padding: 0; }
+  .key-files li { margin-bottom: 12px; }
+  .key-files li:last-child { margin-bottom: 0; }
+  .key-files .path {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    display: block;
+    margin-bottom: 2px;
+    word-break: break-all;
+  }
+  .key-files .desc {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+
+  .gotchas {
+    border: var(--border-width) solid var(--accent);
+    border-radius: var(--radius-panel);
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+    padding: 18px 20px;
+  }
+  .gotchas h3 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .gotchas ul { list-style: none; padding: 0; }
+  .gotchas li {
+    position: relative;
+    padding-left: 16px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .gotchas li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px;
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .gotchas code { font-family: var(--mono); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="repo-line">repository &middot; document kind</div>
+    <h1>How one mechanism flows through the codebase</h1>
+    <p class="summary">
+      Three or four sentences giving the whole answer before the detail
+      starts: what the mechanism is, which file owns it, what every
+      other file has to go through to reach it, and where the one
+      boundary worth reasoning about sits. Identifiers such as
+      <code>aFunction()</code> or <code>a_table</code> belong inline.
+    </p>
+  </header>
+
+  <main>
+    <h2 style="margin-top:0">The path</h2>
+    <div class="diagram-panel">
+      <svg class="flow" viewBox="0 0 720 280" width="720" height="280" role="img" aria-label="Flow diagram">
+        <defs>
+          <marker id="arrowHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path class="arrow-head" d="M 0 0 L 10 5 L 0 10 z"></path>
+          </marker>
+        </defs>
+
+        <!-- Row 1 -->
+        <!-- repeat per node; .hot marks the one the page is about -->
+        <g>
+          <rect class="box" x="30"  y="40" width="150" height="64" rx="10"></rect>
+          <text x="105" y="68" text-anchor="middle">Caller</text>
+          <text class="sub" x="105" y="84" text-anchor="middle">where it starts</text>
+        </g>
+        <g>
+          <rect class="box" x="245" y="40" width="150" height="64" rx="10"></rect>
+          <text x="320" y="68" text-anchor="middle">Entry point</text>
+          <text class="sub" x="320" y="84" text-anchor="middle">path/to/file.ext</text>
+        </g>
+        <g>
+          <rect class="box hot" x="460" y="40" width="180" height="64" rx="10"></rect>
+          <text x="550" y="68" text-anchor="middle">theMechanism()</text>
+          <text class="sub" x="550" y="84" text-anchor="middle">path/to/file.ext</text>
+        </g>
+
+        <!-- Row 2 -->
+        <g>
+          <rect class="box" x="460" y="170" width="180" height="64" rx="10"></rect>
+          <text x="550" y="198" text-anchor="middle">Collaborator</text>
+          <text class="sub" x="550" y="214" text-anchor="middle">path/to/file.ext</text>
+        </g>
+        <g>
+          <rect class="box" x="245" y="170" width="150" height="64" rx="10"></rect>
+          <text x="320" y="198" text-anchor="middle">Store</text>
+          <text class="sub" x="320" y="214" text-anchor="middle">what holds the state</text>
+        </g>
+
+        <!-- Arrows -->
+        <!-- repeat per edge -->
+        <line class="arrow" x1="180" y1="72" x2="245" y2="72" marker-end="url(#arrowHead)"></line>
+        <line class="arrow" x1="395" y1="72" x2="460" y2="72" marker-end="url(#arrowHead)"></line>
+        <line class="arrow" x1="550" y1="104" x2="550" y2="170" marker-end="url(#arrowHead)"></line>
+        <line class="arrow" x1="460" y1="202" x2="395" y2="202" marker-end="url(#arrowHead)"></line>
+
+        <text class="sub" x="212" y="62" text-anchor="middle">edge label</text>
+        <text class="sub" x="560" y="140" text-anchor="start">edge label</text>
+      </svg>
+    </div>
+
+    <h2>Callstack walkthrough</h2>
+
+    <!-- repeat per step; .hot marks the trust boundary or the step the
+         reader came for -->
+    <div class="step">
+      <div class="badge">1</div>
+      <div class="step-body">
+        <div class="step-loc">path/to/file.ext<span class="range"> :00-00</span></div>
+        <p>Two or three sentences on what this step does, what it reads
+          and what it hands on. Identifiers go in
+          <code style="font-family:var(--mono);font-size:12.5px">code</code>.</p>
+        <details class="snippet">
+          <summary>show source</summary>
+<pre class="code"><span class="dim">// path/to/file.ext</span>
+<span class="kw">export function</span> theStep(input) {
+  <span class="kw">const</span> value = read(<span class="str">'a-key'</span>);
+  <span class="kw">return</span> value ?? <span class="kw">null</span>;
+}</pre>
+        </details>
+      </div>
+    </div>
+
+    <div class="step hot">
+      <div class="badge">2</div>
+      <div class="step-body">
+        <div class="step-loc">path/to/file.ext<span class="range"> :00-00</span></div>
+        <p>The step the page is about. Say why it is the one that
+          matters — the single place a decision is made, or the only
+          caller of something — and what changing it would change
+          everywhere else.</p>
+        <details class="snippet" open>
+          <summary>show source</summary>
+<pre class="code"><span class="dim">// path/to/file.ext</span>
+<span class="kw">export async function</span> theMechanism(req, res, next) {
+  <span class="kw">const</span> raw = req.input[<span class="str">'a-key'</span>];
+  <span class="kw">if</span> (!raw) <span class="kw">return</span> res.status(400).end();
+
+  req.ctx = { value: <span class="kw">await</span> Store.get(raw) };
+  next();
+}</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <aside>
+    <div class="panel">
+      <h3>Key files</h3>
+      <ul class="key-files">
+        <!-- repeat per file -->
+        <li>
+          <span class="path">path/to/file.ext</span>
+          <span class="desc">One line on what the file is responsible for.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="gotchas">
+      <h3>Gotchas</h3>
+      <ul>
+        <!-- repeat per gotcha -->
+        <li>One or two sentences on something that looks safe to change
+          and is not, naming the <code>identifier</code> involved.</li>
+      </ul>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+  // Keep at most one snippet open at a time so the walkthrough stays scannable.
+  var snippets = document.querySelectorAll('details.snippet');
+  snippets.forEach(function (d) {
+    d.addEventListener('toggle', function () {
+      if (!d.open) return;
+      snippets.forEach(function (other) {
+        if (other !== d) other.open = false;
+      });
+    });
+  });
+</script>
+</body>
+</html>
