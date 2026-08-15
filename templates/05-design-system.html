@@ -1,0 +1,708 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    05-design-system.html
+  blob:      476af7cdc338be71a223b26418f963f045dbc728
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) The swatch chips show a colour as content rather than
+             as chrome, so they name Tier 1 values directly and stay
+             the same in both themes. That is the deliberate exception
+             to "every colour resolves through a Tier 2 role".
+             (2) The plan asked for one swatch per Tier 1 colour, on
+             the grounds that the palette is the content. Four survive
+             instead, in two marked groups. This is a template: the
+             reader replaces the palette with their own, so shipping
+             eleven chips of this project's palette would be shipping
+             an answer where a shape belongs.
+             (3) Upstream's grid carried an amber and a blue this
+             project has no token for. Rather than keep them as raw
+             hex, they are gone with the rest of the collapsed grid.
+             (4) Upstream defined --border as the shorthand
+             "1.5px solid var(--gray-300)"; ours is a colour, so every
+             "border: var(--border)" was respelled with
+             --border-width.
+             (5) Solid-fill buttons take color: var(--bg), not a fixed
+             white. --accent and --danger flip to light variants in
+             dark mode, where white on them fails contrast.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system reference</title>
+<style>
+  /* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 56px 24px 96px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 40px;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+
+  header .sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 0 48px;
+  }
+  header .sub code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--surface-sunken);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  section { margin-bottom: 64px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 26px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  hr.rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 0 28px;
+  }
+
+  /* ---------- Color ---------- */
+  .swatch-group {
+    margin-bottom: 28px;
+  }
+  .swatch-group-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 20px 16px;
+  }
+  .swatch {}
+  .swatch .chip {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-row);
+    border: var(--border-width) solid var(--border);
+    margin-bottom: 8px;
+  }
+  .swatch .chip.no-border { border-color: transparent; }
+  .swatch .hex {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+  }
+  .swatch .token {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+  }
+
+  /* ---------- Typography ---------- */
+  .type-scale {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-specimen {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .type-meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .type-meta .name {
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .t-display  { font-family: var(--serif); font-size: 48px; line-height: 1.1;  font-weight: 500; letter-spacing: -0.02em; }
+  .t-h1       { font-family: var(--serif); font-size: 32px; line-height: 1.2;  font-weight: 500; letter-spacing: -0.01em; }
+  .t-h2       { font-family: var(--serif); font-size: 24px; line-height: 1.3;  font-weight: 500; }
+  .t-body     { font-family: var(--sans);  font-size: 16px; line-height: 1.55; font-weight: 430; }
+  .t-small    { font-family: var(--sans);  font-size: 14px; line-height: 1.5;  font-weight: 430; }
+  .t-caption  { font-family: var(--sans);  font-size: 12px; line-height: 1.4;  font-weight: 500; color: var(--text-muted); }
+
+  /* ---------- Spacing ---------- */
+  .spacing-ruler {
+    display: flex;
+    align-items: flex-end;
+    gap: 28px;
+    padding: 28px 24px;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    overflow-x: auto;
+  }
+  .space-token {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .space-bar {
+    background: var(--accent);
+    border-radius: 3px;
+    height: 14px;
+  }
+  .space-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .space-label span {
+    display: block;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Radius & Elevation ---------- */
+  .token-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+  .radius-card {
+    width: 120px;
+    height: 88px;
+    background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+    border: var(--border-width) solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    padding: 10px 12px;
+  }
+  .radius-card .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .radius-card .lbl span { color: var(--text-muted); display: block; }
+
+  .shadow-card {
+    width: 160px;
+    height: 96px;
+    background: var(--surface);
+    border-radius: var(--radius-panel);
+    display: flex;
+    align-items: flex-end;
+    padding: 12px 14px;
+  }
+  .shadow-card .lbl {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .shadow-card .lbl span { color: var(--text-muted); display: block; }
+
+  /* ---------- Core components ---------- */
+  .component {
+    margin-bottom: 32px;
+  }
+  .component-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .component-stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+  }
+
+  /* Button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    padding: 0 16px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--radius-row);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .btn-primary   { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
+  .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--surface-sunken); }
+  .btn-ghost     { background: transparent; color: var(--text-muted); }
+  .btn-ghost:hover { background: var(--surface-sunken); }
+  .btn-danger    { background: var(--danger); color: var(--bg); }
+  .btn-danger:hover { background: color-mix(in srgb, var(--danger) 85%, var(--text)); }
+
+  /* Input */
+  .input {
+    height: 38px;
+    padding: 0 12px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-row);
+    width: 260px;
+    outline: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  }
+  .input::placeholder { color: var(--text-muted); }
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+
+  /* Checkbox */
+  .checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox input {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: var(--border-width) solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .checkbox input:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .checkbox input:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px; top: 1px;
+    width: 5px; height: 10px;
+    border: solid var(--bg);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 9px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 999px;
+  }
+  .badge-neutral { background: var(--surface-sunken); color: var(--text-muted); }
+  .badge-accent  { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); }
+  .badge-success { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); color: var(--ok); }
+  .badge-warning { background: color-mix(in srgb, var(--warn) 16%, var(--surface)); color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Design system name</h1>
+    <p class="sub">
+      Where these values come from, and what this page is for.
+    </p>
+  </header>
+
+  <!-- ===================== COLOR ===================== -->
+  <section id="color">
+    <h2>Color</h2>
+    <hr class="rule">
+
+    <!-- repeat per colour group -->
+    <div class="swatch-group">
+      <div class="swatch-group-label">Group name</div>
+      <div class="swatch-grid">
+        <!-- repeat per colour. These chips show a colour as content
+             rather than as chrome, so they name Tier 1 values directly
+             and stay the same in both themes. Replace them with the
+             palette this page documents. -->
+        <div class="swatch">
+          <div class="chip no-border" style="background:var(--clay)"></div>
+          <span class="hex">#d97757</span>
+          <span class="token">--clay</span>
+        </div>
+        <div class="swatch">
+          <div class="chip" style="background:var(--ivory)"></div>
+          <span class="hex">#faf9f5</span>
+          <span class="token">--ivory</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-group">
+      <div class="swatch-group-label">Group name</div>
+      <div class="swatch-grid">
+        <div class="swatch">
+          <div class="chip no-border" style="background:var(--olive)"></div>
+          <span class="hex">#788c5d</span>
+          <span class="token">--olive</span>
+        </div>
+        <div class="swatch">
+          <div class="chip no-border" style="background:var(--rust)"></div>
+          <span class="hex">#b04a3f</span>
+          <span class="token">--rust</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ===================== TYPOGRAPHY ===================== -->
+  <section id="typography">
+    <h2>Typography</h2>
+    <hr class="rule">
+
+    <div class="type-scale">
+      <div class="type-row">
+        <div class="type-specimen t-display">Specimen line</div>
+        <div class="type-meta">
+          <span class="name">Display</span>
+          48 / 1.1 / 500
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-specimen t-h1">Specimen line</div>
+        <div class="type-meta">
+          <span class="name">Heading 1</span>
+          32 / 1.2 / 500
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-specimen t-h2">Specimen line</div>
+        <div class="type-meta">
+          <span class="name">Heading 2</span>
+          24 / 1.3 / 500
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-specimen t-body">A specimen sentence, long enough to show the line height at this size.</div>
+        <div class="type-meta">
+          <span class="name">Body</span>
+          16 / 1.55 / 430
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-specimen t-small">A specimen sentence, long enough to show the line height at this size.</div>
+        <div class="type-meta">
+          <span class="name">Small</span>
+          14 / 1.5 / 430
+        </div>
+      </div>
+      <div class="type-row">
+        <div class="type-specimen t-caption">CAPTION SPECIMEN</div>
+        <div class="type-meta">
+          <span class="name">Caption</span>
+          12 / 1.4 / 500
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SPACING ===================== -->
+  <section id="spacing">
+    <h2>Spacing</h2>
+    <hr class="rule">
+
+    <div class="spacing-ruler">
+      <div class="space-token">
+        <div class="space-bar" style="width:4px"></div>
+        <div class="space-label">4<span>--sp-1</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:8px"></div>
+        <div class="space-label">8<span>--sp-2</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:12px"></div>
+        <div class="space-label">12<span>--sp-3</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:16px"></div>
+        <div class="space-label">16<span>--sp-4</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:24px"></div>
+        <div class="space-label">24<span>--sp-5</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:32px"></div>
+        <div class="space-label">32<span>--sp-6</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:48px"></div>
+        <div class="space-label">48<span>--sp-7</span></div>
+      </div>
+      <div class="space-token">
+        <div class="space-bar" style="width:64px"></div>
+        <div class="space-label">64<span>--sp-8</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== RADIUS & ELEVATION ===================== -->
+  <section id="shape">
+    <h2>Radius &amp; Elevation</h2>
+    <hr class="rule">
+
+    <div class="token-row">
+      <div class="radius-card" style="border-radius:4px">
+        <div class="lbl">4px<span>--r-xs</span></div>
+      </div>
+      <div class="radius-card" style="border-radius:8px">
+        <div class="lbl">8px<span>--r-sm</span></div>
+      </div>
+      <div class="radius-card" style="border-radius:12px">
+        <div class="lbl">12px<span>--r-md</span></div>
+      </div>
+      <div class="radius-card" style="border-radius:20px">
+        <div class="lbl">20px<span>--r-lg</span></div>
+      </div>
+    </div>
+
+    <div class="token-row">
+      <div class="shadow-card" style="box-shadow:0 1px 2px color-mix(in srgb, var(--slate) 6%, transparent)">
+        <div class="lbl">--shadow-sm<span>0 1px 2px / 6%</span></div>
+      </div>
+      <div class="shadow-card" style="box-shadow:0 4px 10px color-mix(in srgb, var(--slate) 8%, transparent)">
+        <div class="lbl">--shadow-md<span>0 4px 10px / 8%</span></div>
+      </div>
+      <div class="shadow-card" style="box-shadow:0 12px 28px color-mix(in srgb, var(--slate) 12%, transparent)">
+        <div class="lbl">--shadow-lg<span>0 12px 28px / 12%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CORE COMPONENTS ===================== -->
+  <section id="components">
+    <h2>Core components</h2>
+    <hr class="rule">
+
+    <div class="component">
+      <div class="component-name">&lt;Button /&gt;</div>
+      <div class="component-stage">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-secondary">Secondary</button>
+        <button class="btn btn-ghost">Ghost</button>
+        <button class="btn btn-danger">Danger</button>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-name">&lt;Input /&gt;</div>
+      <div class="component-stage">
+        <input class="input" type="text" placeholder="Placeholder text">
+        <input class="input" type="text" value="Filled value">
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-name">&lt;Checkbox /&gt;</div>
+      <div class="component-stage">
+        <label class="checkbox">
+          <input type="checkbox">
+          Unchecked label
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" checked>
+          Checked label
+        </label>
+      </div>
+    </div>
+
+    <div class="component">
+      <div class="component-name">&lt;Badge /&gt;</div>
+      <div class="component-stage">
+        <span class="badge badge-neutral">Neutral</span>
+        <span class="badge badge-accent">Accent</span>
+        <span class="badge badge-success">Success</span>
+        <span class="badge badge-warning">Warning</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
