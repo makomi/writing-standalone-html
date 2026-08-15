@@ -1,0 +1,705 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    09-slide-deck.html
+  blob:      c8df95c4d5950f4acfdcf80514f87cc0ec1961a7
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) The inverted slide is theme-invariant, following the
+             TL;DR box in 12-incident-report.html: ground var(--code-bg),
+             text var(--code-text), muted text var(--code-muted). A
+             slide that flipped to an ivory ground in dark mode would
+             need the accent variant tuned for the opposite theme, and
+             no such token exists. Holding the slate ground in both
+             themes keeps upstream's contrast and lets the card and
+             chip take Tier 1 var(--clay) directly, which is the right
+             clay for that ground.
+             (2) All six slides are kept. They are not repeated
+             siblings: each is a different layout — title, list,
+             progress, metrics, decision, next steps — and the set of
+             layouts is what the template carries. Repetition inside a
+             slide is collapsed instead.
+             (3) Two metrics are kept, one .down and one .up, because
+             the delta colours differ by state. Two option chips are
+             kept for the same reason, one .lean and one plain.
+             Everything else collapses to one instance.
+             (4) The two inline SVGs — the title ornament and the
+             metrics sparkline — carried their colours in fill and
+             stroke attributes, which cannot take a var(). Each is
+             lifted into a named class in the page stylesheet. They are
+             page decoration rather than downloadable figures, so the
+             classes do not need to live inside the SVG the way
+             10-svg-illustrations.html requires.
+             (5) Prose specific to the fictional team and product (page
+             title, every slide's heading and body, the metric labels,
+             the decision, the byline) is replaced with neutral
+             placeholders. Metric values and progress percentages are
+             kept and rounded: a progress bar with no number has no
+             shape.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide deck</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    scroll-snap-type: y mandatory;
+    overflow-x: hidden;
+  }
+
+  /* ------------------------------------------------------------------
+     Slide shell
+     ------------------------------------------------------------------ */
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8vh 6vw;
+  }
+
+  .slide-inner {
+    width: 100%;
+    max-width: 780px;
+  }
+
+  /* Theme-invariant on purpose: this slide stays dark in both themes,
+     the way a code panel does. */
+  .slide.invert {
+    background: var(--code-bg);
+    color: var(--code-text);
+  }
+
+  /* ------------------------------------------------------------------
+     Typography
+     ------------------------------------------------------------------ */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+  }
+  .invert .eyebrow { color: var(--code-muted); }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(30px, 4vw, 42px);
+    line-height: 1.15;
+    letter-spacing: -0.005em;
+    margin-bottom: 44px;
+  }
+
+  .subtitle {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    max-width: 520px;
+  }
+
+  .mono { font-family: var(--mono); }
+
+  /* ------------------------------------------------------------------
+     Slide 1 — title
+     ------------------------------------------------------------------ */
+  .title-slide .slide-inner { text-align: left; }
+
+  .ornament {
+    display: block;
+    margin: 0 0 40px 0;
+  }
+  .orn-ring  { fill: none; stroke: var(--border); }
+  .orn-cross { stroke: var(--accent); }
+  .orn-dot   { fill: var(--text); }
+
+  .byline {
+    margin-top: 56px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 24px;
+  }
+
+  /* ------------------------------------------------------------------
+     Slide 2 — shipped list
+     ------------------------------------------------------------------ */
+  .ship-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .ship-item {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    column-gap: 20px;
+    align-items: baseline;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--surface-sunken);
+  }
+  .ship-item:last-child { border-bottom: none; }
+
+  .ship-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--ok);
+    margin-top: 8px;
+    align-self: start;
+  }
+
+  .ship-title {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .ship-desc {
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+
+  .ship-ref {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-top: 4px;
+  }
+
+  /* ------------------------------------------------------------------
+     Slide 3 — in progress
+     ------------------------------------------------------------------ */
+  .prog-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .prog-item .prog-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .prog-title {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 500;
+  }
+
+  .prog-pct {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .prog-track {
+    width: 100%;
+    height: 5px;
+    background: var(--surface-sunken);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .prog-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+
+  .prog-note {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+
+  /* ------------------------------------------------------------------
+     Slide 4 — metrics
+     ------------------------------------------------------------------ */
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    margin-bottom: 48px;
+  }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .metric-value {
+    font-family: var(--serif);
+    font-size: 52px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .metric-delta {
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .metric-delta.down { color: var(--ok); }
+  .metric-delta.up   { color: var(--warn); }
+
+  .sparkline-wrap {
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+  }
+  .spark-line { fill: none; stroke: var(--ok); }
+  .spark-dot  { fill: var(--ok); }
+  .spark-axis { stroke: var(--border); }
+
+  .sparkline-caption {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+
+  /* ------------------------------------------------------------------
+     Slide 5 — decision (inverted)
+     ------------------------------------------------------------------ */
+  .decision-card {
+    border: var(--border-width) solid var(--clay);
+    border-radius: 14px;
+    padding: 36px 38px;
+    background: color-mix(in srgb, var(--clay) 6%, transparent);
+  }
+
+  .decision-q {
+    font-family: var(--serif);
+    font-size: 24px;
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+
+  .decision-context {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--code-muted);
+  }
+
+  .options {
+    display: flex;
+    gap: 14px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--gray-700);
+    color: var(--code-text);
+    background: transparent;
+  }
+  .chip.lean {
+    border-color: var(--clay);
+    color: var(--clay);
+  }
+
+  /* ------------------------------------------------------------------
+     Slide 6 — next week
+     ------------------------------------------------------------------ */
+  .next-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .next-list li {
+    font-family: var(--serif);
+    font-size: 21px;
+    line-height: 1.45;
+    padding-left: 36px;
+    position: relative;
+  }
+
+  .next-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 18px;
+    height: 1.5px;
+    background: var(--accent);
+  }
+
+  .footnote {
+    margin-top: 56px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ------------------------------------------------------------------
+     Slide counter
+     ------------------------------------------------------------------ */
+  #counter {
+    position: fixed;
+    bottom: 22px;
+    right: 28px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    user-select: none;
+    z-index: 10;
+  }
+
+  @media (max-width: 640px) {
+    .metrics { grid-template-columns: 1fr; gap: 36px; }
+    .ship-item { grid-template-columns: 14px 1fr; }
+    .ship-ref { grid-column: 2; padding-top: 8px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============================================================
+       Slide 1 — Title
+       ============================================================ -->
+  <section class="slide title-slide" id="s1">
+    <div class="slide-inner">
+      <svg class="ornament" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+        <circle class="orn-ring" cx="28" cy="28" r="22" stroke-width="1.5"/>
+        <path class="orn-cross" d="M16 28 H40 M28 16 V40" stroke-width="1.5" stroke-linecap="round"/>
+        <circle class="orn-dot" cx="28" cy="28" r="3"/>
+      </svg>
+      <h1>Deck title<br>— period or occasion</h1>
+      <p class="subtitle">
+        One or two sentences saying what the deck covers and what the
+        room is being asked for.
+      </p>
+      <div class="byline">
+        <!-- repeat per byline fact -->
+        <span>Occasion</span>
+        <span>6 slides</span>
+        <span>~4 min</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Slide 2 — Shipped
+       ============================================================ -->
+  <section class="slide" id="s2">
+    <div class="slide-inner">
+      <div class="eyebrow">Section label</div>
+      <h2>Slide heading</h2>
+      <ul class="ship-list">
+        <!-- repeat per item -->
+        <li class="ship-item">
+          <span class="ship-dot"></span>
+          <div>
+            <div class="ship-title">Item name</div>
+            <div class="ship-desc">
+              One or two sentences on what it is and why it matters to
+              the room.
+            </div>
+          </div>
+          <span class="ship-ref">#0000</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Slide 3 — In progress
+       ============================================================ -->
+  <section class="slide" id="s3">
+    <div class="slide-inner">
+      <div class="eyebrow">Section label</div>
+      <h2>Slide heading</h2>
+      <ul class="prog-list">
+        <!-- repeat per item in flight -->
+        <li class="prog-item">
+          <div class="prog-head">
+            <span class="prog-title">Item name</span>
+            <span class="prog-pct">~70%</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:70%"></div></div>
+          <p class="prog-note">
+            One or two sentences on what is done and what is left.
+          </p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Slide 4 — Metrics
+       ============================================================ -->
+  <section class="slide" id="s4">
+    <div class="slide-inner">
+      <div class="eyebrow">Section label</div>
+      <h2>Slide heading</h2>
+
+      <div class="metrics">
+        <!-- repeat per metric, one per delta direction -->
+        <div class="metric">
+          <div class="metric-label">Metric name</div>
+          <div class="metric-value">25<span style="font-size:28px">ms</span></div>
+          <div class="metric-delta down">↓ 10% period on period</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Metric name</div>
+          <div class="metric-value">0.40<span style="font-size:28px">%</span></div>
+          <div class="metric-delta up">↑ 0.10pp</div>
+        </div>
+      </div>
+
+      <div class="sparkline-wrap">
+        <svg width="100%" height="64" viewBox="0 0 780 64" preserveAspectRatio="none" aria-hidden="true">
+          <polyline
+            class="spark-line"
+            points="0,22 110,30 220,18 330,34 440,26 550,40 660,24 780,12"
+            stroke-width="2"
+            stroke-linejoin="round"
+            stroke-linecap="round"/>
+          <circle class="spark-dot" cx="780" cy="12" r="3.5"/>
+          <line class="spark-axis" x1="0" y1="63" x2="780" y2="63" stroke-width="1"/>
+        </svg>
+        <div class="sparkline-caption">
+          What the line shows, and which direction is good
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Slide 5 — Decision needed (inverted)
+       ============================================================ -->
+  <section class="slide invert" id="s5">
+    <div class="slide-inner">
+      <div class="eyebrow">Section label</div>
+      <h2>Slide heading</h2>
+
+      <div class="decision-card">
+        <p class="decision-q">
+          The question the room has to answer, stated as a choice
+          between two named options.
+        </p>
+        <p class="decision-context">
+          Two or three sentences on what each option costs and what it
+          buys, so the room can decide without asking for background.
+        </p>
+      </div>
+
+      <div class="options">
+        <!-- repeat per option; .lean marks the recommendation -->
+        <span class="chip lean">A — First option</span>
+        <span class="chip">B — Second option</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Slide 6 — Next week
+       ============================================================ -->
+  <section class="slide" id="s6">
+    <div class="slide-inner">
+      <div class="eyebrow">Section label</div>
+      <h2>Slide heading</h2>
+      <ul class="next-list">
+        <!-- repeat per line -->
+        <li>One line per commitment, naming the thing and the check that says it is done.</li>
+      </ul>
+      <div class="footnote">
+        Where questions go, in one line.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       Slide counter
+       ============================================================ -->
+  <div id="counter">1 / 6</div>
+
+<script>
+  (function () {
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const counter = document.getElementById('counter');
+    let current = 0;
+
+    function go(i) {
+      current = Math.max(0, Math.min(slides.length - 1, i));
+      slides[current].scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(current + 1); }
+      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     { e.preventDefault(); go(current - 1); }
+    });
+
+    const obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          current = slides.indexOf(en.target);
+          counter.textContent = (current + 1) + ' / ' + slides.length;
+        }
+      });
+    }, { threshold: 0.6 });
+
+    slides.forEach(function (s) { obs.observe(s); });
+  })();
+</script>
+</body>
+</html>

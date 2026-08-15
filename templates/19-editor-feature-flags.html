@@ -1,0 +1,747 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    19-editor-feature-flags.html
+  blob:      8276e78e2cfb07f90fdb6877388296966ae4ee7f
+  converted: 2026-08-15
+  notes:     Six judgment calls.
+             (1) The toggle track is var(--border-strong), not the
+             var(--border) its upstream grey maps to. The knob is
+             var(--surface), which is upstream's white in light, and
+             the raised dark surface in dark. Against the soft border
+             the dark knob would disappear; against the strong one it
+             reads in both themes, and --border-strong is the
+             documented role for an edge that carries state.
+             (2) Upstream's own --clay-d (#B85C3E) is the deep clay
+             this project ships as --accent, so every use of it maps
+             there. The warning count in the sidebar takes var(--warn)
+             instead, because it counts a severity rather than marking
+             a link.
+             (3) The four clay tints — the banner border and fill, the
+             warned row's wash, the warned chip's fill and border —
+             have no token. Each became a color-mix of var(--accent)
+             over var(--surface) or var(--border) at roughly upstream's
+             own strength, so a warned row still reads warm in both
+             themes.
+             (4) The primary button was slate on ivory, a neutral dark
+             button rather than an accent one. It maps to var(--text)
+             on var(--bg), which inverts with the theme the way
+             upstream's pair does.
+             (5) The four flag groups collapse to one, and its flags to
+             three: a prerequisite, a flag that requires it, and one
+             carrying a rollout badge. The dependency warning is the
+             point of the page and needs a prerequisite to point at, so
+             one flag cannot show it.
+             (6) Prose and data specific to the fictional product (page
+             title, eyebrow, standfirst, group label, flag keys and
+             descriptions) are replaced with neutral placeholders.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Feature flag editor</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 32px 64px;
+  }
+
+  /* ---------- header ---------- */
+  header { margin-bottom: 28px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+  }
+  .sub {
+    color: var(--text-muted);
+    max-width: 600px;
+  }
+
+  /* ---------- layout ---------- */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static !important; }
+  }
+
+  /* ---------- warning banner ---------- */
+  .banner {
+    grid-column: 1 / -1;
+    display: none;
+    align-items: baseline;
+    gap: 8px;
+    padding: 10px 14px;
+    border: var(--border-width) solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    color: var(--accent);
+    border-radius: 10px;
+    font-size: 13px;
+  }
+  .banner.show { display: flex; }
+  .banner .glyph { font-size: 13px; line-height: 1; transform: translateY(1px); }
+
+  /* ---------- groups / panels ---------- */
+  .form-col { display: flex; flex-direction: column; gap: 16px; }
+  .group {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+  .group-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 12px 18px 11px;
+    border-bottom: var(--border-width) solid var(--surface-sunken);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .group-head .name { color: var(--text-muted); }
+  .group-head .meta { letter-spacing: 0.04em; }
+
+  /* ---------- flag rows ---------- */
+  .flag {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--surface-sunken);
+    border-left: 3px solid transparent;
+    transition: border-left-color 140ms ease, background 140ms ease;
+  }
+  .flag:last-child { border-bottom: none; }
+  .flag.warn {
+    border-left-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  }
+
+  .flag-info { flex: 1; min-width: 0; }
+  .flag-key {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+  }
+  .dot {
+    display: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+  }
+  .flag.changed .dot { display: inline-block; }
+  .rollout {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 1px 7px 2px;
+  }
+  .flag-desc {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    margin-top: 2px;
+  }
+  .req-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    margin-top: 7px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 9px 3px;
+  }
+  .req-chip .warn-glyph { display: none; }
+  .flag.warn .req-chip {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  }
+  .flag.warn .req-chip .warn-glyph { display: inline; }
+
+  /* ---------- toggle switch ---------- */
+  .toggle {
+    position: relative;
+    flex: none;
+    width: 38px;
+    height: 22px;
+    margin-top: 1px;
+  }
+  .toggle input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .toggle .track {
+    position: absolute;
+    inset: 0;
+    background: var(--border-strong);
+    border-radius: 999px;
+    transition: background 160ms ease;
+    pointer-events: none;
+  }
+  .toggle .track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--slate) 18%, transparent);
+    transition: transform 160ms ease;
+  }
+  .toggle input:checked + .track { background: var(--ok); }
+  .toggle input:checked + .track::after { transform: translateX(16px); }
+  .toggle input:focus-visible + .track {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar {
+    position: sticky;
+    top: 24px;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .side-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .side-count {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+  }
+  .side-count .warn-n { color: var(--warn); }
+  .side-count .sep { color: var(--border); margin: 0 4px; }
+  .diff {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-row);
+    padding: 12px 14px;
+    overflow-x: auto;
+    max-height: 320px;
+    overflow-y: auto;
+    white-space: pre;
+  }
+  .diff .minus { color: var(--text-muted); }
+  .diff .plus { color: var(--ok); }
+  .diff .empty { color: var(--text-muted); }
+
+  .btn {
+    display: block;
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  }
+  .btn.primary {
+    background: var(--text);
+    color: var(--bg);
+  }
+  .btn.primary:hover:not(:disabled) { background: var(--text-muted); }
+  .btn.primary:disabled {
+    background: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+  .btn.primary.copied { background: var(--ok); }
+  .btn.ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: var(--border-width) solid var(--border);
+  }
+  .btn.ghost:hover { border-color: var(--border-strong); }
+  .btn.ghost.copied { border-color: var(--ok); color: var(--ok); }
+  .btn-stack { display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Project / editor / document kind</div>
+    <h1>file-being-edited.json</h1>
+    <p class="sub">One or two sentences saying what the form edits, what
+      the warnings mean, and what the reader copies out when they are
+      done.</p>
+  </header>
+
+  <div class="layout">
+    <div class="banner" id="banner">
+      <span class="glyph">&#9888;</span>
+      <span id="bannerText">1 flag is enabled without its prerequisite</span>
+    </div>
+
+    <div class="form-col" id="formCol"><!-- groups injected --></div>
+
+    <aside class="sidebar">
+      <div>
+        <div class="side-label">Pending changes</div>
+        <div class="side-count" id="sideCount">0 changed</div>
+      </div>
+      <pre class="diff" id="diff"><span class="empty">// no changes yet</span></pre>
+      <div class="btn-stack">
+        <!-- repeat per action -->
+        <button class="btn primary" id="copyDiff" disabled>Copy diff</button>
+        <button class="btn ghost" id="copyJson">Copy full JSON</button>
+        <button class="btn ghost" id="reset">Reset</button>
+      </div>
+    </aside>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// data — one group, holding one flag of each kind the row can render
+// ---------------------------------------------------------------------------
+
+const GROUPS = [
+  // repeat per group
+  {
+    id: "group",
+    label: "Group name",
+    flags: [
+      // repeat per flag
+      { key: "group.first_flag",
+        desc: "One line saying what the flag turns on.",
+        on: true },
+      { key: "group.second_flag",
+        desc: "A flag that depends on another one. Turning it on while the prerequisite is off raises the warning.",
+        on: false, requires: "group.first_flag" },
+      { key: "group.third_flag",
+        desc: "A flag part-way through a rollout, which shows the badge.",
+        on: false, rollout: 10 }
+    ]
+  }
+];
+
+// flat lookup, plus a frozen copy of initial state
+const FLAGS = {};
+const INITIAL = {};
+GROUPS.forEach(g => g.flags.forEach(f => {
+  FLAGS[f.key] = f;
+  INITIAL[f.key] = f.on;
+}));
+
+// ---------------------------------------------------------------------------
+// render the form once; state lives in the checkboxes
+// ---------------------------------------------------------------------------
+
+const formCol   = document.getElementById("formCol");
+const banner    = document.getElementById("banner");
+const bannerTxt = document.getElementById("bannerText");
+const sideCount = document.getElementById("sideCount");
+const diffEl    = document.getElementById("diff");
+const copyDiffBtn = document.getElementById("copyDiff");
+const copyJsonBtn = document.getElementById("copyJson");
+const resetBtn    = document.getElementById("reset");
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function buildForm() {
+  formCol.innerHTML = "";
+  for (const g of GROUPS) {
+    const panel = document.createElement("section");
+    panel.className = "group";
+    panel.dataset.group = g.id;
+
+    const head = document.createElement("div");
+    head.className = "group-head";
+    head.innerHTML =
+      '<span class="name">' + esc(g.label) + '</span>' +
+      '<span class="meta" data-meta></span>';
+    panel.appendChild(head);
+
+    for (const f of g.flags) {
+      const row = document.createElement("div");
+      row.className = "flag";
+      row.dataset.key = f.key;
+
+      const rolloutBadge = (typeof f.rollout === "number")
+        ? '<span class="rollout">' + f.rollout + '%</span>'
+        : "";
+
+      const reqChip = f.requires
+        ? '<div class="req-chip"><span class="warn-glyph">&#9888;</span>' +
+          '<span>requires ' + esc(f.requires) + '</span></div>'
+        : "";
+
+      row.innerHTML =
+        '<label class="toggle">' +
+          '<input type="checkbox" data-key="' + esc(f.key) + '"' +
+            (f.on ? " checked" : "") +
+            ' aria-label="' + esc(f.key) + '">' +
+          '<span class="track"></span>' +
+        '</label>' +
+        '<div class="flag-info">' +
+          '<div class="flag-key"><span class="dot"></span>' +
+            '<span>' + esc(f.key) + '</span>' + rolloutBadge +
+          '</div>' +
+          '<div class="flag-desc">' + esc(f.desc) + '</div>' +
+          reqChip +
+        '</div>';
+
+      panel.appendChild(row);
+    }
+    formCol.appendChild(panel);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// state helpers
+// ---------------------------------------------------------------------------
+
+function currentState() {
+  const state = {};
+  formCol.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    state[cb.dataset.key] = cb.checked;
+  });
+  return state;
+}
+
+function computeDiff(state) {
+  const lines = [];
+  for (const g of GROUPS) {
+    for (const f of g.flags) {
+      if (state[f.key] !== INITIAL[f.key]) {
+        lines.push({ key: f.key, from: INITIAL[f.key], to: state[f.key] });
+      }
+    }
+  }
+  return lines;
+}
+
+function diffText(lines) {
+  return lines.map(l =>
+    '- "' + l.key + '": ' + l.from + '\n' +
+    '+ "' + l.key + '": ' + l.to
+  ).join("\n");
+}
+
+function fullJson(state) {
+  // grouped, ordered, pretty-printed — what you'd actually paste into the file
+  let out = "{\n";
+  GROUPS.forEach((g, gi) => {
+    g.flags.forEach((f, fi) => {
+      const last = gi === GROUPS.length - 1 && fi === g.flags.length - 1;
+      out += '  "' + f.key + '": ' + state[f.key] + (last ? "" : ",") + "\n";
+    });
+  });
+  out += "}";
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// the live update pass
+// ---------------------------------------------------------------------------
+
+function update() {
+  const state = currentState();
+  let warnCount = 0;
+
+  // per-row decorations
+  for (const g of GROUPS) {
+    let onCount = 0;
+    for (const f of g.flags) {
+      const row = formCol.querySelector('.flag[data-key="' + CSS.escape(f.key) + '"]');
+      const on = state[f.key];
+      if (on) onCount++;
+
+      const changed = on !== INITIAL[f.key];
+      row.classList.toggle("changed", changed);
+
+      let warn = false;
+      if (f.requires && on && !state[f.requires]) warn = true;
+      row.classList.toggle("warn", warn);
+      if (warn) warnCount++;
+    }
+    const meta = formCol.querySelector(
+      '.group[data-group="' + g.id + '"] [data-meta]');
+    meta.textContent = g.flags.length + " flags, " + onCount + " on";
+  }
+
+  // diff + sidebar
+  const lines = computeDiff(state);
+  if (lines.length === 0) {
+    diffEl.innerHTML = '<span class="empty">// no changes yet</span>';
+    copyDiffBtn.disabled = true;
+  } else {
+    diffEl.innerHTML = lines.map(l =>
+      '<span class="minus">- "' + esc(l.key) + '": ' + l.from + '</span>\n' +
+      '<span class="plus">+ "' + esc(l.key) + '": ' + l.to + '</span>'
+    ).join("\n");
+    copyDiffBtn.disabled = false;
+  }
+
+  sideCount.innerHTML =
+    lines.length + " changed" +
+    '<span class="sep">&middot;</span>' +
+    '<span class="' + (warnCount ? "warn-n" : "") + '">' +
+      warnCount + " warning" + (warnCount === 1 ? "" : "s") +
+    "</span>";
+
+  // banner
+  if (warnCount > 0) {
+    bannerTxt.textContent =
+      warnCount === 1
+        ? "1 flag is enabled without its prerequisite"
+        : warnCount + " flags are enabled without their prerequisites";
+    banner.classList.add("show");
+  } else {
+    banner.classList.remove("show");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// clipboard + buttons
+// ---------------------------------------------------------------------------
+
+function flash(btn, label) {
+  const orig = btn.textContent;
+  btn.textContent = label;
+  btn.classList.add("copied");
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.classList.remove("copied");
+    btn.disabled = false;
+    update(); // restore disabled state on copyDiff if needed
+  }, 1200);
+}
+
+function writeClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  // fallback for file:// contexts without clipboard permission
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+copyDiffBtn.addEventListener("click", () => {
+  const lines = computeDiff(currentState());
+  if (!lines.length) return;
+  writeClipboard(diffText(lines)).then(() => flash(copyDiffBtn, "Copied ✓"));
+});
+
+copyJsonBtn.addEventListener("click", () => {
+  writeClipboard(fullJson(currentState())).then(() => flash(copyJsonBtn, "Copied ✓"));
+});
+
+resetBtn.addEventListener("click", () => {
+  formCol.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.checked = INITIAL[cb.dataset.key];
+  });
+  update();
+});
+
+formCol.addEventListener("change", e => {
+  if (e.target.matches("input[type=checkbox]")) update();
+});
+
+// ---------------------------------------------------------------------------
+// boot
+// ---------------------------------------------------------------------------
+
+buildForm();
+update();
+</script>
+</body>
+</html>
