@@ -42,10 +42,14 @@
              (5) Prose specific to the fictional task-tracking product
              (empty-state headline, body copy, button label, list
              steps, rationale paragraphs, page h1) is replaced with
-             neutral placeholders. The artboard tag labels ("B —
-             Illustrated", "D — Instructional") and the eyebrow
-             ("Exploration · Empty states") stay, since they name
-             generic UI patterns, not product-specific fiction.
+             neutral placeholders, artboard tag labels included. The
+             eyebrow ("Exploration · Empty states") stays, since it
+             names a generic UI pattern, not product fiction.
+             (6) The primary button in the first artboard takes
+             --clay-deep, not --clay. White on upstream's clay reaches
+             2.9:1, and the artboard is a design preview, not a colour
+             sample, so the label has to be readable. --clay-deep is
+             Tier 1 as well, so the artboard stays theme-invariant.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -392,7 +396,7 @@
       font-size: 13px;
       font-weight: 500;
       color: var(--white);
-      background: var(--clay);
+      background: var(--clay-deep);
       border-radius: var(--radius-row);
       padding: 8px 16px;
     }
@@ -475,7 +479,7 @@
 
       <!-- repeat per design option -->
       <article class="artboard">
-        <span class="tag">B — Illustrated</span>
+        <span class="tag">A — Direction name</span>
         <div class="stage">
           <div class="es-b">
             <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden="true">
@@ -503,7 +507,7 @@
       </article>
 
       <article class="artboard">
-        <span class="tag">D — Instructional</span>
+        <span class="tag">B — Direction name</span>
         <div class="stage">
           <div class="es-d">
             <h3>Empty-state title</h3>

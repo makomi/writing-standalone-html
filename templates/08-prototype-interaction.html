@@ -380,11 +380,12 @@
 
   <header>
     <div class="eyebrow">Prototype / interaction</div>
-    <h1>Sidebar drag-to-reorder</h1>
+    <h1>Prototype title</h1>
     <p class="sub">
-      Throwaway HTML so we can <em>feel</em> the reorder before porting it to
-      React. Native <code class="inline">dragstart / dragover / drop</code>,
-      ~40 lines of JS, no libraries. Grab a row by the dots and move it.
+      What this prototype is for, and what it deliberately leaves out.
+      Name the interaction it is built to <em>judge</em>, the API it uses —
+      <code class="inline">dragstart / dragover / drop</code> — and the one
+      sentence a reader needs to drive it.
     </p>
   </header>
 
@@ -408,32 +409,22 @@
           <div class="indicator" id="indicator"></div>
         </ul>
       </nav>
-      <p class="footnote">Order persists in the DOM only — refresh to reset.</p>
+      <p class="footnote">The caveat a reader needs before drawing conclusions.</p>
     </div>
 
     <div>
       <section class="notes">
         <h2>What you're feeling</h2>
-        <p class="lede">Design decisions baked into this prototype, so you can push back on them.</p>
+        <p class="lede">The decisions baked into this prototype, so a reader can push back on them.</p>
         <ul>
+          <!-- repeat per decision -->
           <li>
-            <b>Drop indicator snaps to the nearest gap</b>, not the raw cursor Y.
-            It only moves when you cross a row's midpoint — feels more decisive,
-            less jittery.
+            <b>The decision, stated as a claim</b>, then the alternative it
+            was chosen over and the reason the difference is felt.
           </li>
           <li>
-            <b>Dragged row stays in place at 35% opacity</b> with a 2&deg; tilt.
-            Keeping the ghost in the list preserves your sense of where you
-            started; the tilt reads as "lifted."
-          </li>
-          <li>
-            <b>Grip dots are the affordance, but the whole row is draggable.</b>
-            Dots darken on hover to teach the gesture without forcing a
-            tiny hit target.
-          </li>
-          <li>
-            <b>No auto-scroll, no drop animation.</b> Left out on purpose so the
-            core feel is easy to judge — say the word and we add them next.
+            <b>A second decision.</b> Say what was deliberately left out
+            as well as what was put in — an omission is a decision.
           </li>
         </ul>
       </section>
@@ -442,8 +433,8 @@
         <h2>Open questions</h2>
         <ol>
           <!-- repeat per question -->
-          <li>Should some rows be <b>pinned</b> and excluded from reordering?</li>
-          <li>Keyboard path: is <code class="inline">Alt + Arrow</code> to move the focused row enough for the first ship?</li>
+          <li>A question whose answer changes the <b>behaviour</b>, not the styling.</li>
+          <li>A question about scope: is <code class="inline">Alt + Arrow</code> enough for the first ship?</li>
         </ol>
       </section>
     </div>
