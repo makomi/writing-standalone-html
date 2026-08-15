@@ -29,7 +29,8 @@ Breaking any of these breaks the point of the project.
 2. **The token block is embedded verbatim, never linked.** It sits
    between `/* TOKENS:BEGIN */` and `/* TOKENS:END */`. Linking
    `references/design-system.css` would satisfy DRY and destroy
-   invariant 1.
+   invariant 1. Edit the source of truth and run `./scripts/stamp.sh`
+   to push it into every template. Never edit a copy in place.
 3. **No raw hex outside the token block.** Every color resolves through
    `var()`. `scripts/verify.sh` enforces this.
 4. **Tier 1 light values are upstream's palette.** Never retune them.
@@ -56,6 +57,7 @@ No install step. Python 3 standard library only.
 ```bash
 ./scripts/verify.sh                      # all templates
 ./scripts/verify.sh templates/09-*.html  # one file
+./scripts/stamp.sh                       # re-embed the token block
 ./tests/test_verify.sh           # the checker's own tests
 ./tests/test_upstream.sh         # borrow and return the clone
 python3 tests/test_tokens.py     # token roles and WCAG contrast

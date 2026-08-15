@@ -20,8 +20,9 @@ ten-task plan are done and their tests pass.
 | `references/conversion-rules.md` | Built — the seven-step procedure |
 | `scripts/verify.sh` | Built — three mechanical checks |
 | `scripts/upstream.sh` | Built — borrow and return the clone |
+| `scripts/stamp.sh` | Built — re-embed the token block |
 | `lib/`, `tests/` | Built — 4 test suites, all green |
-| `templates/` | **Empty.** 20 conversions outstanding |
+| `templates/` | 1 of 20 converted |
 | `scripts/update.sh`, `SKILL.md`, `CHANGELOG.md` | Not written yet |
 
 Until `templates/` is populated the skill does nothing useful, because

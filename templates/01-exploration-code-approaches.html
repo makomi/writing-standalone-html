@@ -70,6 +70,11 @@
   --ok:             var(--olive-deep);
   --warn:           var(--clay-deep);
   --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
 
   /* Type and shape, normalized from upstream's drifting spellings */
   --serif: ui-serif, Georgia, "Times New Roman", serif;
@@ -81,8 +86,14 @@
   --border-width: 1.5px;
 }
 
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg:             var(--ink);
     --surface:        var(--ink-raised);
     --surface-sunken: var(--slate);
@@ -95,6 +106,20 @@
     --warn:           var(--clay-light);
     --danger:         var(--rust-light);
   }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
 }
 
 /* Code blocks are theme-invariant on purpose: they stay dark in light

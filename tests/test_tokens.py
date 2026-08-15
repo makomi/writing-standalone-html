@@ -46,19 +46,72 @@ PAIRS = [
 ]
 
 
+DECL = re.compile(r"(--[a-z0-9-]+)\s*:\s*([^;]+);")
+
+
+def declarations(src):
+    return {m.group(1): m.group(2).strip() for m in DECL.finditer(src)}
+
+
+def rules(css, prefix=""):
+    """Return [(selector, body)] for every rule, media queries flattened.
+
+    The selector of a rule inside a media query is prefixed with the
+    query, so a caller can tell the two dark blocks apart.
+    """
+    out = []
+    i = 0
+    while True:
+        brace = css.find("{", i)
+        if brace == -1:
+            return out
+        selector = re.sub(r"/\*.*?\*/", " ", css[i:brace], flags=re.S)
+        selector = " ".join(selector.split())
+        depth, j = 1, brace + 1
+        while depth:
+            if j >= len(css):
+                raise SystemExit(f"unbalanced braces after {selector!r}")
+            depth += {"{": 1, "}": -1}.get(css[j], 0)
+            j += 1
+        body = css[brace + 1:j - 1]
+        if selector.startswith("@"):
+            out.extend(rules(body, prefix=f"{prefix}{selector} "))
+        else:
+            out.append((prefix + selector, body))
+        i = j
+
+
 def blocks(css):
-    """Return (light_decls, dark_decls) as name -> value strings."""
-    dark_match = re.search(
-        r"@media\s*\(prefers-color-scheme:\s*dark\)\s*\{(.*)\}", css, re.S
-    )
-    if not dark_match:
-        raise SystemExit("no prefers-color-scheme: dark block found")
-    dark_src = dark_match.group(1)
-    light_src = css[: dark_match.start()]
-    decl = re.compile(r"(--[a-z0-9-]+)\s*:\s*([^;]+);")
-    light = {m.group(1): m.group(2).strip() for m in decl.finditer(light_src)}
+    """Return (light_decls, dark_decls) as name -> value strings.
+
+    Dark is declared twice — once under prefers-color-scheme for the
+    system setting, once under [data-theme="dark"] for an explicit
+    choice. Both must say the same thing, or a page would render one
+    way when the reader asks and another way when the page asks.
+    """
+    by_selector = {}
+    for selector, body in rules(css):
+        by_selector.setdefault(selector, []).append(body)
+
+    media = "@media (prefers-color-scheme: dark) :root:not([data-theme=\"light\"])"
+    attribute = ":root[data-theme=\"dark\"]"
+    for name, selector in (("system", media), ("explicit", attribute)):
+        if selector not in by_selector:
+            raise SystemExit(f"no {name} dark block; expected {selector}")
+
+    media_decls = declarations("".join(by_selector[media]))
+    attribute_decls = declarations("".join(by_selector[attribute]))
+    if media_decls != attribute_decls:
+        drift = sorted(set(media_decls) ^ set(attribute_decls)) or [
+            k for k in media_decls if media_decls[k] != attribute_decls.get(k)
+        ]
+        raise SystemExit(
+            "the two dark blocks disagree on: " + ", ".join(drift)
+        )
+
+    light = declarations("".join(by_selector.get(":root", [])))
     dark = dict(light)
-    dark.update({m.group(1): m.group(2).strip() for m in decl.finditer(dark_src)})
+    dark.update(media_decls)
     return light, dark
 
 
