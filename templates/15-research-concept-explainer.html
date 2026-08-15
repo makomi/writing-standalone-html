@@ -1,0 +1,525 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    15-research-concept-explainer.html
+  blob:      85e5193f9f276431ca4140471d1f2af43299d249
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) The eight-colour series array the script held became
+             eight CSS classes, .s0 to .s7, and the renderer now emits
+             a class instead of a fill or stroke attribute. Upstream's
+             series carried four hues this palette does not have —
+             sky, gold, teal and tan — so the ramp is rebuilt from the
+             three house hues plus their pairwise color-mix blends. A
+             series palette is decoration, not meaning, and this is the
+             only route that lets it follow the theme: a colour written
+             into an attribute from JavaScript is fixed at the moment
+             it is written.
+             (2) Node and key dots take fill from the same series
+             class as the arc they belong to, so ownership stays
+             readable. The node outline stays var(--surface), which is
+             upstream's white against the page.
+             (3) The button hover was upstream's oat. Mapping oat to
+             var(--surface-sunken) as the table says would have made
+             hover identical to rest, because the button already sits
+             on surface-sunken. It became an accent tint over the
+             surface, following 01 and 10.
+             (4) The glossary keeps two entries and the prose keeps two
+             terms. One of each would show the hover highlight firing
+             but not that it picks the matching entry, which is the
+             whole mechanism.
+             (5) Prose specific to the fictional subject (page title,
+             lead, section text, table cells, glossary definitions) is
+             replaced with neutral placeholders naming the slot. The
+             demo's numbers are kept: a ring with no nodes has no
+             shape.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concept explainer</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 120px;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 48px;
+  }
+  @media (max-width: 960px) { .page { grid-template-columns: 1fr; } aside { order: 2; position: static; } }
+
+  /* ── header ───────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 33px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+  }
+  .lead { max-width: 640px; margin-bottom: 8px; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--text);
+    margin: 40px 0 12px;
+  }
+  p { margin-bottom: 12px; max-width: 680px; }
+  code { font-family: var(--mono); font-size: 13px; }
+  .term {
+    border-bottom: var(--border-width) dotted var(--accent);
+    cursor: help;
+    color: var(--text);
+  }
+
+  /* ── demo panel ───────────────────────── */
+  .demo {
+    border: var(--border-width) solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 24px;
+    margin: 12px 0 8px;
+  }
+  .demo-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  @media (max-width: 760px) { .demo-grid { grid-template-columns: 1fr; } }
+
+  svg.ring { display: block; width: 100%; max-width: 320px; }
+  .ring .track { fill: none; stroke: var(--border); stroke-width: 14; }
+  .ring .arc   { fill: none; stroke-width: 14; transition: stroke-dasharray 300ms ease; }
+  .ring .node  { stroke: var(--surface); stroke-width: 2; transition: cx 300ms, cy 300ms, opacity 200ms; }
+  .ring .key   { transition: cx 300ms, cy 300ms; }
+  .ring .lbl   { font-family: var(--mono); font-size: 10px; fill: var(--text-muted); }
+
+  /* Series ramp. SVG fill and stroke cannot take a var(), so the
+     renderer emits one of these classes instead of a colour. Eight
+     steps, built from the three house hues and their blends. */
+  .ring .arc.s0 { stroke: var(--accent); }
+  .ring .arc.s1 { stroke: var(--ok); }
+  .ring .arc.s2 { stroke: var(--danger); }
+  .ring .arc.s3 { stroke: var(--text-muted); }
+  .ring .arc.s4 { stroke: color-mix(in srgb, var(--accent) 50%, var(--ok)); }
+  .ring .arc.s5 { stroke: color-mix(in srgb, var(--ok) 50%, var(--text-muted)); }
+  .ring .arc.s6 { stroke: color-mix(in srgb, var(--danger) 50%, var(--accent)); }
+  .ring .arc.s7 { stroke: var(--text); }
+  .ring .node.s0, .ring .key.s0 { fill: var(--accent); }
+  .ring .node.s1, .ring .key.s1 { fill: var(--ok); }
+  .ring .node.s2, .ring .key.s2 { fill: var(--danger); }
+  .ring .node.s3, .ring .key.s3 { fill: var(--text-muted); }
+  .ring .node.s4, .ring .key.s4 { fill: color-mix(in srgb, var(--accent) 50%, var(--ok)); }
+  .ring .node.s5, .ring .key.s5 { fill: color-mix(in srgb, var(--ok) 50%, var(--text-muted)); }
+  .ring .node.s6, .ring .key.s6 { fill: color-mix(in srgb, var(--danger) 50%, var(--accent)); }
+  .ring .node.s7, .ring .key.s7 { fill: var(--text); }
+
+  .controls { font-size: 13px; }
+  .controls .row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .controls label { width: 64px; color: var(--text-muted); font-family: var(--mono); font-size: 11px; }
+  .controls .val { font-family: var(--mono); font-size: 12px; color: var(--text); width: 28px; }
+  .controls input[type=range] { flex: 1; accent-color: var(--accent); }
+  .controls button {
+    appearance: none;
+    border: var(--border-width) solid var(--border);
+    background: var(--surface-sunken);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 10px;
+    cursor: pointer;
+    margin-right: 6px;
+    color: var(--text);
+  }
+  .controls button:hover { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+
+  .readout {
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+    padding-top: 14px;
+    font-size: 13px;
+  }
+  .readout b { color: var(--text); }
+  .moved { color: var(--accent); font-family: var(--mono); }
+
+  /* ── compare table ────────────────────── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 640px;
+    font-size: 13.5px;
+    margin: 12px 0;
+  }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 500; }
+  td.bad { color: var(--danger); }
+  td.good { color: var(--ok); }
+
+  /* ── glossary ─────────────────────────── */
+  aside {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    padding: 18px 18px 8px;
+  }
+  aside .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  aside dl dt {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--text);
+    margin-top: 0;
+  }
+  aside dl dd {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin: 2px 0 14px;
+  }
+  aside dl dt.hl, aside dl dt.hl + dd { background: color-mix(in srgb, var(--accent) 10%, transparent); margin-left: -8px; margin-right: -8px; padding-left: 8px; padding-right: 8px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <main>
+    <div class="eyebrow">Category &middot; document kind</div>
+    <h1>The concept, named in one line</h1>
+    <p class="lead">
+      Two or three sentences setting up the problem the concept solves:
+      the situation, what goes wrong without it, and the one-sentence
+      version of the answer. Notation such as <code>f(x)</code> belongs
+      inline.
+    </p>
+
+    <h2>The idea, stated plainly</h2>
+    <p>
+      A paragraph naming the mechanism and the terms it introduces. A
+      term the reader may not know is marked as a
+      <span class="term" data-term="first">first term</span>, which
+      highlights its glossary entry on hover; a
+      <span class="term" data-term="second">second term</span> points
+      at the entry below it.
+    </p>
+
+    <div class="demo">
+      <div class="demo-grid">
+        <svg class="ring" id="ring" viewBox="0 0 260 260"></svg>
+        <div class="controls">
+          <!-- repeat per slider -->
+          <div class="row">
+            <label>nodes</label>
+            <input id="nSlider" type="range" min="2" max="8" value="4">
+            <span class="val" id="nVal">4</span>
+          </div>
+          <div class="row">
+            <label>keys</label>
+            <input id="kSlider" type="range" min="10" max="60" value="32" step="2">
+            <span class="val" id="kVal">32</span>
+          </div>
+          <div>
+            <!-- repeat per action button -->
+            <button id="rm">remove a node</button>
+            <button id="add">add a node</button>
+            <button id="reset">reset</button>
+          </div>
+          <div class="readout" id="readout">
+            <b>4</b> nodes &middot; <b>32</b> keys &middot; <span class="moved">—</span> moved on last change
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:13px; color:var(--text-muted); max-width:640px;">
+      One or two sentences telling the reader what to look at while
+      they move the controls, and what the colours mean.
+    </p>
+
+    <h2>Versus the naive approach</h2>
+    <table>
+      <thead><tr><th></th><th>First option</th><th>Second option</th></tr></thead>
+      <tbody>
+        <!-- repeat per comparison row; .bad and .good mark a verdict -->
+        <tr><td>What is being compared</td><td class="bad">The weaker result</td><td class="good">The stronger result</td></tr>
+        <tr><td>A row with no verdict</td><td>One short phrase</td><td>One short phrase</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Where it shows up</h2>
+    <p>
+      A closing paragraph on where a reader will meet the concept in
+      practice, and which variant production systems actually use.
+    </p>
+  </main>
+
+  <!-- glossary -->
+  <aside>
+    <div class="label">Glossary</div>
+    <dl id="gloss">
+      <!-- repeat per term; data-g matches data-term in the prose -->
+      <dt data-g="first">First term</dt>
+      <dd>One sentence defining it, in the reader's language rather
+        than the subject's.</dd>
+      <dt data-g="second">Second term</dt>
+      <dd>A second entry, so the hover highlight has somewhere wrong to
+        land and visibly does not.</dd>
+    </dl>
+  </aside>
+
+</div>
+
+<script>
+/* ── tiny deterministic hash so the demo is stable ── */
+function h(s) {
+  let x = 2166136261;
+  for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = (x * 16777619) >>> 0; }
+  return x / 4294967296;
+}
+/* Series count, matching the .s0-.s7 classes in the stylesheet. The
+   colours live there so they follow the theme. */
+const SERIES = 8;
+const CX = 130, CY = 130, R = 100, RKEY = 78;
+const TAU = Math.PI * 2;
+
+const ring = document.getElementById("ring");
+const nSlider = document.getElementById("nSlider");
+const kSlider = document.getElementById("kSlider");
+const nVal = document.getElementById("nVal");
+const kVal = document.getElementById("kVal");
+const readout = document.getElementById("readout");
+
+let nodes = [], keys = [], lastOwner = {};
+
+function pt(r, t) { return [CX + r * Math.sin(t * TAU), CY - r * Math.cos(t * TAU)]; }
+
+function ownerOf(t) {
+  const sorted = [...nodes].sort((a, b) => a.t - b.t);
+  for (const n of sorted) if (n.t >= t) return n;
+  return sorted[0];
+}
+
+function buildNodes(n) {
+  nodes = [];
+  for (let i = 0; i < n; i++) nodes.push({ id: "n" + i, t: h("node-" + i), s: i % SERIES });
+}
+function buildKeys(k) {
+  keys = [];
+  for (let i = 0; i < k; i++) keys.push({ id: "k" + i, t: h("key-" + i) });
+}
+
+function arcPath(t0, t1) {
+  const [x0, y0] = pt(R, t0), [x1, y1] = pt(R, t1);
+  let d = t1 - t0; if (d <= 0) d += 1;
+  const large = d > 0.5 ? 1 : 0;
+  return `M ${x0} ${y0} A ${R} ${R} 0 ${large} 1 ${x1} ${y1}`;
+}
+
+function render(moved) {
+  const sorted = [...nodes].sort((a, b) => a.t - b.t);
+  let svg = `<circle class="track" cx="${CX}" cy="${CY}" r="${R}"/>`;
+
+  for (let i = 0; i < sorted.length; i++) {
+    const cur = sorted[i];
+    const prev = sorted[(i - 1 + sorted.length) % sorted.length];
+    svg += `<path class="arc s${cur.s}" d="${arcPath(prev.t, cur.t)}"/>`;
+  }
+  for (const k of keys) {
+    const o = ownerOf(k.t);
+    const [x, y] = pt(RKEY, k.t);
+    svg += `<circle class="key s${o.s}" r="3.5" cx="${x}" cy="${y}"/>`;
+  }
+  for (const n of sorted) {
+    const [x, y] = pt(R, n.t);
+    svg += `<circle class="node s${n.s}" r="9" cx="${x}" cy="${y}"/>`;
+  }
+  svg += `<text class="lbl" x="${CX}" y="18" text-anchor="middle">0</text>`;
+  ring.innerHTML = svg;
+
+  readout.innerHTML =
+    `<b>${nodes.length}</b> nodes &middot; <b>${keys.length}</b> keys &middot; ` +
+    `<span class="moved">${moved == null ? "—" : moved + " (" + Math.round(moved / keys.length * 100) + "%)"}</span> moved on last change`;
+}
+
+function diffAndRender() {
+  let moved = 0;
+  for (const k of keys) {
+    const o = ownerOf(k.t).id;
+    if (lastOwner[k.id] && lastOwner[k.id] !== o) moved++;
+    lastOwner[k.id] = o;
+  }
+  render(moved);
+}
+
+function reset() {
+  buildNodes(+nSlider.value);
+  buildKeys(+kSlider.value);
+  lastOwner = {};
+  for (const k of keys) lastOwner[k.id] = ownerOf(k.t).id;
+  nVal.textContent = nSlider.value;
+  kVal.textContent = kSlider.value;
+  render(null);
+}
+
+nSlider.oninput = () => { nVal.textContent = nSlider.value; buildNodes(+nSlider.value); diffAndRender(); };
+kSlider.oninput = () => { kVal.textContent = kSlider.value; buildKeys(+kSlider.value); lastOwner = {}; for (const k of keys) lastOwner[k.id] = ownerOf(k.t).id; render(null); };
+document.getElementById("rm").onclick = () => { if (nodes.length > 2) { nodes.splice(Math.floor(Math.random() * nodes.length), 1); diffAndRender(); } };
+document.getElementById("add").onclick = () => { if (nodes.length < 12) { const i = nodes.length; nodes.push({ id: "n" + Date.now(), t: Math.random(), s: i % SERIES }); diffAndRender(); } };
+document.getElementById("reset").onclick = reset;
+
+/* glossary highlight */
+document.querySelectorAll(".term").forEach(el => {
+  const g = el.dataset.term;
+  el.addEventListener("mouseenter", () => document.querySelector(`dt[data-g="${g}"]`)?.classList.add("hl"));
+  el.addEventListener("mouseleave", () => document.querySelector(`dt[data-g="${g}"]`)?.classList.remove("hl"));
+});
+
+reset();
+</script>
+</body>
+</html>
