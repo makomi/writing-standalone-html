@@ -1,0 +1,602 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    11-status-report.html
+  blob:      764665143d3731ccb5e8978898bf7d7a5e46cc5f
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) Upstream defined --border as a shorthand,
+             "1.5px solid var(--gray-300)". Our --border is a colour,
+             so every "border: var(--border)" became
+             "border: var(--border-width) solid var(--border)".
+             (2) The chart bars are one series with one member
+             highlighted. The base bars take an accent tint through
+             color-mix and the peak takes --accent itself, so the
+             highlight reads as the same hue at full strength in both
+             themes.
+             (3) The oat carryover band takes an accent tint rather
+             than --surface-sunken, which would have flattened it into
+             the panels above it.
+             (4) rgba(20, 20, 19, 0.08) on the carryover divider became
+             color-mix(in srgb, var(--text) 8%, transparent). The
+             raw-hex check does not catch an rgba() literal, but it is
+             a hardcoded colour all the same.
+             (5) Three table rows survive, not one: the risk dot
+             encodes low, medium and high in colour, and one row cannot
+             show a three-level scale.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status report</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 56px 24px 120px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    margin-bottom: 40px;
+  }
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 38px;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .auto-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border: var(--border-width) solid var(--border);
+    border-radius: 999px;
+    padding: 5px 11px;
+    white-space: nowrap;
+  }
+  .date-range {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .date-range .repo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Sections ---------- */
+  section {
+    margin-bottom: 52px;
+  }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  hr.rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0 0 22px;
+  }
+
+  /* ---------- Summary band ---------- */
+  .summary-band {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+  @media (max-width: 720px) {
+    .summary-band { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-card {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 20px 22px 18px;
+  }
+  .stat-card.warn {
+    border-left: 4px solid var(--warn);
+    padding-left: 19px;
+  }
+  .stat-num {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-family: var(--sans);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+  .stat-delta {
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-top: 6px;
+  }
+  .stat-delta.up { color: var(--ok); }
+  .stat-delta.flat { color: var(--text-muted); }
+
+  /* ---------- Highlights ---------- */
+  .highlights {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .highlights li {
+    position: relative;
+    padding: 0 0 14px 26px;
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+  .highlights li::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .highlights li strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ---------- Shipped table ---------- */
+  table.shipped {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+  table.shipped thead th {
+    text-align: left;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.shipped tbody td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+  table.shipped tbody tr:last-child td {
+    border-bottom: none;
+  }
+  table.shipped tbody tr:hover {
+    background: var(--bg);
+  }
+  .pr-link {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted transparent;
+  }
+  .pr-link:hover {
+    border-bottom-color: var(--accent);
+  }
+  .author {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .risk {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .risk-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  /* The three severity roles. Mapping one of these to the wrong role
+     destroys information rather than just looking wrong. */
+  .risk-dot.low  { background: var(--ok); }
+  .risk-dot.med  { background: var(--warn); }
+  .risk-dot.high { background: var(--danger); }
+
+  /* ---------- Velocity chart ---------- */
+  .chart-panel {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 24px 28px 18px;
+  }
+  .chart-panel svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  /* SVG presentation attributes cannot take var(), so the chart's
+     colours are classes. One series: the base bars are a tint of the
+     accent, the highlighted bar is the accent itself. */
+  .grid     { stroke: var(--surface-sunken); }
+  .axis     { stroke: var(--border); }
+  .tick     { fill: var(--text-muted); }
+  .bar      { fill: color-mix(in srgb, var(--accent) 28%, var(--surface)); }
+  .bar-peak { fill: var(--accent); }
+  .value    { fill: var(--text-muted); }
+  .value-peak { fill: var(--text); }
+  .chart-caption {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 12px;
+  }
+
+  /* ---------- Carryover ---------- */
+  .carryover {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    border-radius: var(--radius-panel);
+    padding: 20px 22px;
+  }
+  .carry-item {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 8px 0;
+  }
+  .carry-item + .carry-item {
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .carry-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--surface);
+    border-radius: 4px;
+    padding: 3px 7px;
+    flex-shrink: 0;
+  }
+  .carry-body {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .carry-body .who {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <header>
+      <div class="header-top">
+        <h1>Reporting period</h1>
+        <span class="auto-pill">auto-generated</span>
+      </div>
+      <div class="date-range">
+        2026-01-01 &ndash; 2026-01-07 &nbsp;&middot;&nbsp;
+        <span class="repo">repo @ branch</span>
+      </div>
+    </header>
+
+    <!-- Summary band -->
+    <section>
+      <div class="summary-band">
+        <!-- repeat per headline number -->
+        <div class="stat-card">
+          <div class="stat-num">10</div>
+          <div class="stat-label">What was counted</div>
+          <div class="stat-delta up">+3 on the period before</div>
+        </div>
+        <!-- the same card, marked as needing attention -->
+        <div class="stat-card warn">
+          <div class="stat-num">1</div>
+          <div class="stat-label">What went wrong</div>
+          <div class="stat-delta flat">Severity &middot; duration</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Highlights -->
+    <section>
+      <h2>Highlights</h2>
+      <hr class="rule">
+      <ul class="highlights">
+        <!-- repeat per highlight -->
+        <li>
+          <strong>The claim, in one bold sentence.</strong> Then the
+          evidence for it: what shipped, what moved, and the number that
+          says by how much.
+        </li>
+        <li>
+          <strong>A second claim.</strong> Keep one of these about
+          something that went badly, so the section is a report rather
+          than an advertisement.
+        </li>
+      </ul>
+    </section>
+
+    <!-- Shipped -->
+    <section>
+      <h2>Shipped</h2>
+      <hr class="rule">
+      <table class="shipped">
+        <thead>
+          <tr>
+            <th style="width: 90px;">PR</th>
+            <th>Title</th>
+            <th style="width: 140px;">Author</th>
+            <th style="width: 100px;">Risk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- repeat per merged change — one row per risk level, so the
+               three-colour scale stays visible -->
+          <tr>
+            <td><a class="pr-link" href="#">#1001</a></td>
+            <td>What the change did, in one line</td>
+            <td class="author">Author</td>
+            <td><span class="risk"><span class="risk-dot low"></span>Low</span></td>
+          </tr>
+          <tr>
+            <td><a class="pr-link" href="#">#1002</a></td>
+            <td>What the change did, in one line</td>
+            <td class="author">Author</td>
+            <td><span class="risk"><span class="risk-dot med"></span>Med</span></td>
+          </tr>
+          <tr>
+            <td><a class="pr-link" href="#">#1003</a></td>
+            <td>What the change did, in one line</td>
+            <td class="author">Author</td>
+            <td><span class="risk"><span class="risk-dot high"></span>High</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Velocity -->
+    <section>
+      <h2>Velocity</h2>
+      <hr class="rule">
+      <div class="chart-panel">
+        <svg viewBox="0 0 400 180" role="img" aria-label="Count per day">
+          <!-- gridlines -->
+          <line x1="48" y1="20"  x2="380" y2="20"  class="grid" stroke-width="1"/>
+          <line x1="48" y1="60"  x2="380" y2="60"  class="grid" stroke-width="1"/>
+          <line x1="48" y1="100" x2="380" y2="100" class="grid" stroke-width="1"/>
+          <line x1="48" y1="140" x2="380" y2="140" class="axis" stroke-width="1.5"/>
+
+          <!-- y-axis labels -->
+          <text x="40" y="144" text-anchor="end" font-family="system-ui" font-size="11" class="tick">0</text>
+          <text x="40" y="104" text-anchor="end" font-family="system-ui" font-size="11" class="tick">1</text>
+          <text x="40" y="64"  text-anchor="end" font-family="system-ui" font-size="11" class="tick">2</text>
+          <text x="40" y="24"  text-anchor="end" font-family="system-ui" font-size="11" class="tick">3</text>
+
+          <!-- repeat per bar — baseline y=140, unit=40px, width=56,
+               gap=24, first bar at x=64. Values are obviously round on
+               purpose; a chart with no data has no shape. -->
+          <rect x="64"  y="100" width="56" height="40"  rx="6" class="bar"/>
+          <rect x="144" y="60"  width="56" height="80"  rx="6" class="bar"/>
+          <!-- the same bar, highlighted -->
+          <rect x="224" y="20"  width="56" height="120" rx="6" class="bar-peak"/>
+          <rect x="304" y="100" width="56" height="40"  rx="6" class="bar"/>
+
+          <!-- value labels -->
+          <text x="92"  y="94" text-anchor="middle" font-family="system-ui" font-size="11" class="value">1</text>
+          <text x="172" y="54" text-anchor="middle" font-family="system-ui" font-size="11" class="value">2</text>
+          <text x="252" y="14" text-anchor="middle" font-family="system-ui" font-size="11" font-weight="600" class="value-peak">3</text>
+          <text x="332" y="94" text-anchor="middle" font-family="system-ui" font-size="11" class="value">1</text>
+
+          <!-- x-axis labels -->
+          <text x="92"  y="158" text-anchor="middle" font-family="system-ui" font-size="11" class="tick">Mon</text>
+          <text x="172" y="158" text-anchor="middle" font-family="system-ui" font-size="11" class="tick">Tue</text>
+          <text x="252" y="158" text-anchor="middle" font-family="system-ui" font-size="11" class="tick">Wed</text>
+          <text x="332" y="158" text-anchor="middle" font-family="system-ui" font-size="11" class="tick">Thu</text>
+        </svg>
+        <div class="chart-caption">
+          What the chart counts, and one sentence on the shape it shows.
+        </div>
+      </div>
+    </section>
+
+    <!-- Carryover -->
+    <section>
+      <h2>Carryover</h2>
+      <hr class="rule">
+      <div class="carryover">
+        <!-- repeat per carried item -->
+        <div class="carry-item">
+          <span class="carry-tag">In review</span>
+          <div class="carry-body">
+            What did not land, and the one thing it is waiting on.
+            <span class="who">&middot; Owner</span>
+          </div>
+        </div>
+        <div class="carry-item">
+          <span class="carry-tag">Blocked</span>
+          <div class="carry-body">
+            A second item, with a different tag, so the tag reads as a
+            state rather than as decoration.
+            <span class="who">&middot; Owner</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Where the numbers came from &nbsp;&mdash;&nbsp; generated 2026-01-07
+    </footer>
+
+  </div>
+</body>
+</html>
