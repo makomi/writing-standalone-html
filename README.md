@@ -11,25 +11,28 @@ reference. Open it in a browser and it works.
 
 ## Status
 
-**Tooling built, templates not yet converted.** Tasks 1 to 3 of the
-ten-task plan are done and their tests pass.
+**Tooling built, twelve of twenty templates converted.** Tasks 1 to 4
+of the ten-task plan are done, the batch conversion is under way, and
+every test passes.
 
 | Path | State |
 |---|---|
-| `references/design-system.css` | Built — two-tier tokens, light and dark |
+| `references/design-system.css` | Built — two-tier tokens, light and dark, with an explicit theme switch |
 | `references/conversion-rules.md` | Built — the seven-step procedure |
 | `scripts/verify.sh` | Built — three mechanical checks |
 | `scripts/upstream.sh` | Built — borrow and return the clone |
 | `scripts/stamp.sh` | Built — re-embed the token block |
 | `lib/`, `tests/` | Built — 4 test suites, all green |
-| `templates/` | 1 of 20 converted |
-| `scripts/update.sh`, `SKILL.md`, `CHANGELOG.md` | Not written yet |
+| `templates/` | 12 of 20 converted |
+| `scripts/update.sh`, `SKILL.md` | Not written yet |
 
 Until `templates/` is populated the skill does nothing useful, because
 `SKILL.md` — the file Claude Code reads to trigger it — does not exist.
 
-Resume at Task 4 in `docs/plans/2026-08-14-writing-standalone-html.md`.
-Run the suite first; it should be green before anything is added.
+Eight templates remain: `03`, `04`, `09`, `13`, `14`, `15`, `18`, `19`.
+Convert them per `references/conversion-rules.md`, then pick up Task 8
+in `docs/plans/2026-08-14-writing-standalone-html.md`. Run the suite
+first; it should be green before anything is added.
 
 ## How it works
 
@@ -54,6 +57,10 @@ adds a semantic tier — `--bg`, `--surface`, `--text`, `--accent`,
 `--ok`, `--danger` and the rest — and templates reference that. Dark
 mode then costs one edit to a shared block instead of one edit per
 template.
+
+A page follows the reader's system setting by default, and can override
+it by setting `data-theme="dark"` or `data-theme="light"` on the root
+element.
 
 There are 253 such colors across the twenty files, drawn from 49
 distinct values. Fourteen recur often enough to be mapped in a table;
@@ -146,6 +153,7 @@ manual — that the page reads correctly in both light and dark themes.
 
 ## License
 
-Templates derive from MIT-licensed upstream material. Provenance is
-recorded per file in `templates/MANIFEST.json` and in each template's
-header comment.
+Templates derive from MIT-licensed upstream material. Every template
+carries its source file, its upstream commit and its blob SHA in a
+header comment. `templates/MANIFEST.json` collects the same records for
+the drift checker.
