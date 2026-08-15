@@ -4,8 +4,120 @@
 <meta charset="utf-8">
 <title>Fixture</title>
 <style>
-/* TOKENS:BEGIN */
-:root { --ivory: #FAF9F5; --slate: #141413; --bg: var(--ivory); --text: var(--slate); }
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
 /* TOKENS:END */
 body { background: var(--bg); color: #3D3D3A; }
 </style>

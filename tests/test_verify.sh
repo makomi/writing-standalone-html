@@ -33,7 +33,15 @@ assert_output_contains() {
 assert_exit 0 tests/fixtures/good.html "clean file passes"
 assert_exit 1 tests/fixtures/bad-external-ref.html "external ref fails"
 assert_exit 1 tests/fixtures/bad-raw-hex.html "raw hex outside tokens fails"
+assert_exit 1 tests/fixtures/bad-rgba.html "rgba() outside tokens fails"
+assert_exit 1 tests/fixtures/bad-named-colour.html "named colour outside tokens fails"
+assert_exit 1 tests/fixtures/bad-token-drift.html "edited token block fails"
+assert_exit 1 tests/fixtures/bad-fiction.html "surviving upstream brand fails"
 assert_output_contains "external" tests/fixtures/bad-external-ref.html "names the external-ref check"
 assert_output_contains "raw hex" tests/fixtures/bad-raw-hex.html "names the raw-hex check"
+assert_output_contains "rgba(" tests/fixtures/bad-rgba.html "quotes the offending colour function"
+assert_output_contains "tomato" tests/fixtures/bad-named-colour.html "quotes the offending colour name"
+assert_output_contains "token block" tests/fixtures/bad-token-drift.html "names the token-block check"
+assert_output_contains "fiction" tests/fixtures/bad-fiction.html "names the fiction check"
 
 exit $fail

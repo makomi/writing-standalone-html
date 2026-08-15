@@ -1,8 +1,3 @@
-<!--
-  Fixture header, shaped like a template provenance block.
-  notes: stroke="white" became var(--white); #F0EEE6 became
-         var(--surface-sunken). Neither is a live colour.
--->
 <!doctype html>
 <html lang="en">
 <head>
@@ -124,7 +119,8 @@
    and clears 3:1 against the page in both themes. Reach for the strong
    one whenever the edge is the affordance. */
 /* TOKENS:END */
-body { background: var(--bg); color: var(--text); }
+body { background: var(--bg); color: var(--text);
+       box-shadow: 0 1px 2px rgba(20, 20, 19, 0.08); }
 </style>
 </head>
 <body><p>Fixture body.</p></body>

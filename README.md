@@ -19,7 +19,7 @@ every test passes.
 |---|---|
 | `references/design-system.css` | Built — two-tier tokens, light and dark, with an explicit theme switch |
 | `references/conversion-rules.md` | Built — the seven-step procedure |
-| `scripts/verify.sh` | Built — three mechanical checks |
+| `scripts/verify.sh` | Built — five mechanical checks |
 | `scripts/upstream.sh` | Built — borrow and return the clone |
 | `scripts/stamp.sh` | Built — re-embed the token block |
 | `lib/`, `tests/` | Built — 4 test suites, all green |

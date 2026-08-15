@@ -46,6 +46,10 @@ def main():
     for path in sources:
         text = path.read_text(encoding="utf-8")
         for hit in checks.check_no_raw_hex_outside_tokens(text):
+            # The check also reports rgb(), hsl() and named colours.
+            # Counting is by hex value, so those hits are not ours.
+            if not hit.startswith("raw hex "):
+                continue
             value = expand(re.search(r"#[0-9a-fA-F]+", hit).group(0))
             counts[value] = counts.get(value, 0) + 1
 

@@ -31,8 +31,11 @@ Breaking any of these breaks the point of the project.
    `references/design-system.css` would satisfy DRY and destroy
    invariant 1. Edit the source of truth and run `./scripts/stamp.sh`
    to push it into every template. Never edit a copy in place.
-3. **No raw hex outside the token block.** Every color resolves through
-   `var()`. `scripts/verify.sh` enforces this.
+   `scripts/verify.sh` compares every embedded copy against the source
+   of truth and fails on a mismatch.
+3. **No raw colour outside the token block.** Every color resolves
+   through `var()` — hex, `rgb()`, `hsl()` and named colours alike.
+   `scripts/verify.sh` enforces this.
 4. **Tier 1 light values are upstream's palette.** Never retune them.
    Contrast problems get fixed in the variants this project added —
    `--clay-deep`, `--olive-deep` for light, `--ink`, `--ink-raised`,

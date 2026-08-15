@@ -142,23 +142,24 @@ name that is missing, because the file keeps working and renders wrong.
 
 ### Colours the checker cannot see
 
-`scripts/verify.sh` looks for hex inside `<style>` blocks and
-colour-bearing attributes. Three kinds of colour slip past it, and all
-three still get re-tokenized:
+`scripts/verify.sh` reads `<style>` blocks and colour-bearing
+attributes, and inside them it catches hex, `rgb()`, `hsl()` and the
+named colours. Two kinds of colour still slip past it, and both get
+re-tokenized:
 
-1. `rgba(20, 20, 19, 0.08)`, `hsl(...)`, or a named colour like
-   `tomato`. Convert a translucent overlay with `color-mix`:
-
-       border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
-
-2. A colour inside a `<script>` string. `06-component-variants.html`
+1. A colour inside a `<script>` string. `06-component-variants.html`
    sets `--card-shadow` from JavaScript, and the literal it wrote left
    the shadow pinned to the light theme the moment a reader touched the
    control. **Rule 6 protects interaction logic, not colour.** A string
    holding a colour is colour work, and rewriting it is not a refactor.
 
-3. A colour in an inline `style` attribute that the regex reaches but
+2. A colour in an inline `style` attribute that the regex reaches but
    the eye skips. Check the swatches and chips.
+
+A translucent overlay converts with `color-mix`, which keeps the
+mixture tied to a token and passes the checker:
+
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
 
 ### Shape tokens
 
@@ -227,11 +228,19 @@ the single retained instance from step 4.
 
     ./scripts/verify.sh templates/<NN-name>.html
 
-All three checks must pass. Then open the file in a browser and confirm
-it reads correctly in both light and dark — the fourth check, which no
-script can make.
+Five checks must pass: the file parses, it holds no external
+reference, its token block matches `references/design-system.css`
+exactly, no raw colour survives outside that block, and no upstream
+brand name survives anywhere. Then open the file in a browser and
+confirm it reads correctly in both light and dark — the sixth check,
+which no script can make.
 
-Note what the raw-hex check does and does not scan: it looks inside
-`<style>` blocks and color-bearing attributes only. Element text is
-excluded on purpose, because `#4871` in `11-status-report.html` is a
-pull-request number, not a color.
+Note what the colour check does and does not scan: it looks inside
+`<style>` blocks and color-bearing attributes only, and it skips HTML
+comments. Element text is excluded on purpose, because `#4871` in
+`11-status-report.html` is a pull-request number, not a color, and
+comments are excluded because the provenance header quotes the colours
+it replaced.
+
+A token-block failure is repaired by `./scripts/stamp.sh <file>`, never
+by editing the block in the template.
