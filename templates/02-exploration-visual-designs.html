@@ -1,0 +1,543 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    02-exploration-visual-designs.html
+  blob:      fd1a1fa8bc935a6f3d77aa028ec39666a0f80752
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) Design-option cards collapse from four (A/B/C/D) to
+             two, per the file-specific brief note: a comparison needs
+             two cards, not one. Kept B (Illustrated) and D
+             (Instructional) — together they exercise SVG
+             fill/stroke/stop-color tokenization (the case rule 3 calls
+             out by name) and a non-centered list layout, the widest
+             structural range of the four. Dropped A and C along with
+             their CSS (.es-a, .es-c, .float, .shadow, @keyframes
+             bob/shadow) since no surviving markup references them.
+             The two survivors keep their original B/D letters rather
+             than renumbering to A/B, so the tag text still matches
+             the .es-b / .es-d class names.
+             (2) .stage and .stage.dark are a self-contained light/dark
+             preview toggled by the page's own radio control,
+             independent of the page's own theme — the "Light" option
+             must stay light even when the page itself is in dark
+             theme. Its fixed colors are therefore mapped to Tier 1 and
+             the theme-invariant code-* roles rather than to Tier 2,
+             the same reasoning the rules give for code blocks:
+             var(--code-bg) for the dark ground, var(--code-muted) for
+             the muted foreground on that ground, and Tier 1
+             var(--gray-100) / var(--gray-700) / var(--ink-raised) for
+             the other three local vars — each an exact or near-exact
+             match for upstream's own hex value (#F0EEE6, #3D3D3A, and
+             #1F1E1B against --ink-raised's #232320).
+             (3) The artboard tag chip background (upstream's oat) and
+             the segmented-control selected background both map to the
+             default var(--surface-sunken), not to an accent tint —
+             neither sits next to another surface-sunken element in the
+             same view, so there is no fill collision to escalate over.
+             (4) stroke="white" on the SVG plus-mark became
+             var(--white): same token tier, upstream just spelled it as
+             a keyword instead of hex.
+             (5) Prose specific to the fictional task-tracking product
+             (empty-state headline, body copy, button label, list
+             steps, rationale paragraphs, page h1) is replaced with
+             neutral placeholders. The artboard tag labels ("B —
+             Illustrated", "D — Instructional") and the eyebrow
+             ("Exploration · Empty states") stay, since they name
+             generic UI patterns, not product-specific fiction.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visual design comparison</title>
+  <style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text-muted);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 96px;
+    }
+
+    /* ---------- sticky toolbar ---------- */
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      border-bottom: var(--border-width) solid var(--border);
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+    }
+
+    .toolbar .title {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-right: auto;
+    }
+
+    .toolbar .field {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toolbar .field > span {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .seg {
+      display: inline-flex;
+      border: var(--border-width) solid var(--border);
+      border-radius: var(--radius-row);
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .seg label {
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .seg label + label {
+      border-left: var(--border-width) solid var(--border);
+    }
+
+    .seg input { display: none; }
+
+    .seg input:checked + span {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .seg label:has(input:checked) {
+      background: var(--surface-sunken);
+    }
+
+    /* ---------- page header ---------- */
+
+    .page {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 48px 32px 0;
+    }
+
+    header.page-head {
+      max-width: 720px;
+      margin-bottom: 40px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 38px;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .prompt-box {
+      background: var(--surface-sunken);
+      border: var(--border-width) solid var(--border);
+      border-radius: var(--radius-panel);
+      padding: 16px 20px;
+      font-size: 14.5px;
+    }
+
+    .prompt-box .label {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* ---------- artboard grid ---------- */
+
+    .board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    @media (max-width: 960px) {
+      .board { grid-template-columns: 1fr; }
+    }
+
+    .artboard {
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      border-radius: var(--radius-panel);
+      padding: 20px;
+      position: relative;
+    }
+
+    .tag {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      background: var(--surface-sunken);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: var(--radius-row);
+      z-index: 2;
+    }
+
+    .stage {
+      height: 280px;
+      border-radius: var(--radius-row);
+      border: var(--border-width) solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.15s, border-color 0.15s;
+      overflow: hidden;
+    }
+
+    .stage.dark {
+      background: var(--code-bg);
+      border-color: var(--code-bg);
+    }
+
+    .rationale {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* =========================================================
+       Empty-state variants — each scoped under .es-*
+       Theme tokens flip when .stage.dark is present. These four
+       custom properties describe a preview surface that stays fixed
+       regardless of the page's own light/dark theme, so they draw
+       from Tier 1 and the theme-invariant code roles, not Tier 2.
+       ========================================================= */
+
+    .stage        { --fg: var(--slate); --muted: var(--gray-500); --line: var(--gray-300); --panel: var(--white); }
+    .stage.dark   { --fg: var(--gray-100); --muted: var(--code-muted); --line: var(--gray-700); --panel: var(--ink-raised); }
+
+    /* ---- B · Illustrated ---- */
+
+    .es-b {
+      text-align: center;
+      max-width: 320px;
+    }
+    .es-b svg {
+      display: block;
+      margin: 0 auto 18px;
+    }
+    .es-b h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 19px;
+      color: var(--fg);
+      margin-bottom: 6px;
+    }
+    .es-b p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .es-b .btn {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--white);
+      background: var(--clay);
+      border-radius: var(--radius-row);
+      padding: 8px 16px;
+    }
+    .stage.dark .es-b .btn { color: var(--slate); background: var(--oat); }
+
+    /* ---- D · Instructional ---- */
+
+    .es-d {
+      width: 100%;
+      max-width: 360px;
+    }
+    .es-d h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 18px;
+      color: var(--fg);
+      margin-bottom: 14px;
+    }
+    .es-d ol {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .es-d li {
+      counter-increment: step;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--panel);
+      border: var(--border-width) solid var(--line);
+      border-radius: var(--radius-row);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--fg);
+    }
+    .es-d li::before {
+      content: counter(step);
+      font-family: var(--mono);
+      font-size: 11px;
+      flex: 0 0 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--oat);
+      color: var(--slate);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .es-d li span { color: var(--muted); display: block; font-size: 12px; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div class="title">Design exploration</div>
+    <div class="field">
+      <span>Background:</span>
+      <div class="seg" id="bg-seg">
+        <label><input type="radio" name="bg" value="light" checked><span>Light</span></label>
+        <label><input type="radio" name="bg" value="dark"><span>Dark</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <header class="page-head">
+      <div class="eyebrow">Exploration · Empty states</div>
+      <h1>Question this page answers</h1>
+      <div class="prompt-box">
+        <span class="label">Prompt</span>
+        The request that produced this page, quoted as it was written.
+      </div>
+    </header>
+
+    <section class="board">
+
+      <!-- repeat per design option -->
+      <article class="artboard">
+        <span class="tag">B — Illustrated</span>
+        <div class="stage">
+          <div class="es-b">
+            <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden="true">
+              <rect x="14" y="20" width="72" height="54" rx="8"
+                    fill="var(--panel)" stroke="var(--line)" stroke-width="1.5"/>
+              <rect x="34" y="10" width="72" height="54" rx="8"
+                    fill="var(--oat)"/>
+              <line x1="46" y1="26" x2="92" y2="26"
+                    stroke="var(--slate)" stroke-width="2" stroke-linecap="round"/>
+              <line x1="46" y1="38" x2="80" y2="38"
+                    stroke="var(--slate)" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+              <circle cx="98" cy="60" r="12" fill="var(--clay)"/>
+              <path d="M98 55 v10 M93 60 h10"
+                    stroke="var(--white)" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <h3>Empty-state title</h3>
+            <p>One-line description of the empty state.</p>
+            <span class="btn">Primary action</span>
+          </div>
+        </div>
+        <p class="rationale">
+          One paragraph explaining why this direction was chosen, and
+          what it assumes about the surrounding UI.
+        </p>
+      </article>
+
+      <article class="artboard">
+        <span class="tag">D — Instructional</span>
+        <div class="stage">
+          <div class="es-d">
+            <h3>Empty-state title</h3>
+            <ol>
+              <li>
+                Step one
+                <span>One-line detail for step one.</span>
+              </li>
+              <li>
+                Step two
+                <span>One-line detail for step two.</span>
+              </li>
+              <li>
+                Step three
+                <span>One-line detail for step three.</span>
+              </li>
+            </ol>
+          </div>
+        </div>
+        <p class="rationale">
+          One paragraph explaining why this direction was chosen, and
+          the trade-off it accepts.
+        </p>
+      </article>
+
+    </section>
+  </div>
+
+  <script>
+    const stages = document.querySelectorAll('.stage');
+    document.getElementById('bg-seg').addEventListener('change', (e) => {
+      const dark = e.target.value === 'dark';
+      stages.forEach((s) => s.classList.toggle('dark', dark));
+    });
+  </script>
+</body>
+</html>

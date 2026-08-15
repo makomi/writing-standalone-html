@@ -1,0 +1,510 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    08-prototype-interaction.html
+  blob:      0ce6ea47c95e6b5702de290f8583a01d504931dc
+  converted: 2026-08-15
+  notes:     Five judgment calls.
+             (1) Sidebar rows collapse from six to two, not one. Upstream
+             carries two states — rows with a count badge and rows
+             without one (Archive, Trash had no count) — and one row
+             would erase that distinction and leave the drag demo with
+             no second row to reorder against.
+             (2) .notes li's border-top used upstream's gray-50, the
+             same hex the table maps to --surface-sunken. Mapped it to
+             --border instead: its job here is a row divider, and
+             --surface-sunken goes near-black-on-near-black in dark
+             mode, so a divider drawn in it would vanish.
+             (3) .questions li::marker used --olive for a plain
+             decorative list-marker colour, not a success/passing
+             state. No decorative-accent-2 token exists, so mapped to
+             --ok as the nearest role, per rule 3 step 4.
+             (4) Inline code's 4px radius and the drop indicator's 2px
+             height/radius/dot were left as literal numbers — none of
+             the three shape tokens match them.
+             (5) Open questions collapse from three to two, keeping one
+             list item with a <b> emphasis and one with inline <code>,
+             so the list still shows both inline-formatting patterns.
+             The kept <b> item no longer names "Trash"/"Archive" (those
+             rows were removed in judgment call 1) and was reworded to
+             a generic "pinned rows" placeholder.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sidebar drag-to-reorder</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 48px 32px 64px;
+  }
+  header { margin-bottom: 28px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+  }
+  .sub {
+    color: var(--text-muted);
+    max-width: 600px;
+  }
+  code.inline {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface-sunken);
+    border: var(--border-width) solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ---------- layout ---------- */
+  .bench {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ---------- sidebar mock ---------- */
+  .sidebar {
+    width: 260px;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 14px 10px;
+  }
+  .sidebar-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 10px 10px;
+  }
+  .list {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    margin: 2px 0;
+    border-radius: var(--radius-row);
+    background: var(--surface);
+    cursor: grab;
+    user-select: none;
+    transition: background 120ms linear, transform 120ms ease-out, opacity 120ms linear;
+  }
+  .item:hover { background: var(--surface-sunken); }
+  .item:hover .grip i { background: var(--text-muted); }
+  .item.dragging {
+    opacity: 0.35;
+    transform: rotate(2deg);
+    background: var(--surface-sunken);
+    cursor: grabbing;
+  }
+  .item .label { font-size: 14px; color: var(--text); }
+  .item .count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* grip: 2 × 3 dot grid, pure css */
+  .grip {
+    flex: none;
+    width: 10px;
+    height: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 3px);
+    grid-template-rows: repeat(3, 3px);
+    gap: 3px;
+    align-content: center;
+  }
+  .grip i {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 120ms linear;
+  }
+
+  /* drop indicator line */
+  .indicator {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px;
+    pointer-events: none;
+    display: none;
+  }
+  .indicator::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .indicator.on { display: block; }
+
+  /* ---------- annotation panel ---------- */
+  .notes {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 22px 24px;
+  }
+  .notes h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 18px;
+    margin: 0 0 6px;
+  }
+  .notes .lede {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin: 0 0 16px;
+  }
+  .notes ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .notes li {
+    position: relative;
+    padding: 10px 0 10px 22px;
+    border-top: var(--border-width) solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .notes li:first-child { border-top: none; }
+  .notes li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 16px;
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+  .notes li b { color: var(--text); font-weight: 600; }
+
+  /* ---------- open questions ---------- */
+  .questions {
+    margin-top: 28px;
+    background: var(--surface-sunken);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 20px 24px;
+  }
+  .questions h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 17px;
+    margin: 0 0 12px;
+  }
+  .questions ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .questions li {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+  .questions li::marker {
+    font-family: var(--mono);
+    color: var(--ok);
+    font-weight: 600;
+  }
+
+  .footnote {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Prototype / interaction</div>
+    <h1>Sidebar drag-to-reorder</h1>
+    <p class="sub">
+      Throwaway HTML so we can <em>feel</em> the reorder before porting it to
+      React. Native <code class="inline">dragstart / dragover / drop</code>,
+      ~40 lines of JS, no libraries. Grab a row by the dots and move it.
+    </p>
+  </header>
+
+  <div class="bench">
+
+    <div>
+      <nav class="sidebar">
+        <div class="sidebar-title">Views</div>
+        <ul class="list" id="list">
+          <!-- repeat per view -->
+          <li class="item" draggable="true">
+            <span class="grip"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="label">View label</span>
+            <span class="count">12</span>
+          </li>
+          <li class="item" draggable="true">
+            <span class="grip"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="label">View label</span>
+            <span class="count"></span>
+          </li>
+          <div class="indicator" id="indicator"></div>
+        </ul>
+      </nav>
+      <p class="footnote">Order persists in the DOM only — refresh to reset.</p>
+    </div>
+
+    <div>
+      <section class="notes">
+        <h2>What you're feeling</h2>
+        <p class="lede">Design decisions baked into this prototype, so you can push back on them.</p>
+        <ul>
+          <li>
+            <b>Drop indicator snaps to the nearest gap</b>, not the raw cursor Y.
+            It only moves when you cross a row's midpoint — feels more decisive,
+            less jittery.
+          </li>
+          <li>
+            <b>Dragged row stays in place at 35% opacity</b> with a 2&deg; tilt.
+            Keeping the ghost in the list preserves your sense of where you
+            started; the tilt reads as "lifted."
+          </li>
+          <li>
+            <b>Grip dots are the affordance, but the whole row is draggable.</b>
+            Dots darken on hover to teach the gesture without forcing a
+            tiny hit target.
+          </li>
+          <li>
+            <b>No auto-scroll, no drop animation.</b> Left out on purpose so the
+            core feel is easy to judge — say the word and we add them next.
+          </li>
+        </ul>
+      </section>
+
+      <section class="questions">
+        <h2>Open questions</h2>
+        <ol>
+          <!-- repeat per question -->
+          <li>Should some rows be <b>pinned</b> and excluded from reordering?</li>
+          <li>Keyboard path: is <code class="inline">Alt + Arrow</code> to move the focused row enough for the first ship?</li>
+        </ol>
+      </section>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  var list = document.getElementById('list');
+  var indicator = document.getElementById('indicator');
+  var dragging = null;
+  var dropBefore = null; // node to insert before, or null = append
+
+  list.addEventListener('dragstart', function (e) {
+    var item = e.target.closest('.item');
+    if (!item) return;
+    dragging = item;
+    item.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+  });
+
+  list.addEventListener('dragover', function (e) {
+    if (!dragging) return;
+    e.preventDefault();
+    var siblings = Array.prototype.filter.call(
+      list.children,
+      function (el) { return el.classList && el.classList.contains('item'); }
+    );
+    dropBefore = null;
+    for (var i = 0; i < siblings.length; i++) {
+      var r = siblings[i].getBoundingClientRect();
+      if (e.clientY < r.top + r.height / 2) { dropBefore = siblings[i]; break; }
+    }
+    var listRect = list.getBoundingClientRect();
+    var edge = dropBefore
+      ? dropBefore.getBoundingClientRect().top
+      : siblings[siblings.length - 1].getBoundingClientRect().bottom;
+    indicator.style.top = (edge - listRect.top - 1) + 'px';
+    indicator.classList.add('on');
+  });
+
+  list.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (!dragging) return;
+    if (dropBefore) list.insertBefore(dragging, dropBefore);
+    else list.insertBefore(dragging, indicator);
+    cleanup();
+  });
+
+  list.addEventListener('dragleave', function (e) {
+    if (!list.contains(e.relatedTarget)) indicator.classList.remove('on');
+  });
+  document.addEventListener('dragend', cleanup);
+
+  function cleanup() {
+    if (dragging) dragging.classList.remove('dragging');
+    dragging = null;
+    dropBefore = null;
+    indicator.classList.remove('on');
+  }
+</script>
+</body>
+</html>
