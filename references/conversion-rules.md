@@ -128,6 +128,26 @@ one-offs is a list, not a rule. Apply this order:
 4. **Anything left** is a judgment call. Pick the nearest role by job,
    and record the decision in the header notes.
 
+### Names upstream also uses
+
+Upstream files define their own tokens, and some of the names collide
+with ours while meaning something else. `11-status-report.html`
+declares `--border: 1.5px solid var(--gray-300)` — a whole shorthand,
+where ours is a colour. Every `border: var(--border)` in that file had
+to become `border: var(--border-width) solid var(--border)`.
+
+Before re-tokenizing, read the file's own `:root` and compare its names
+against ours. A name that means something different is worse than a
+name that is missing, because the file keeps working and renders wrong.
+
+### Colours the checker cannot see
+
+`scripts/verify.sh` looks for hex. It does not catch `rgba(20, 20, 19,
+0.08)`, `hsl(...)` or a named colour like `tomato`. Those are hardcoded
+colours all the same. Convert a translucent overlay with `color-mix`:
+
+    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+
 ### Shape tokens
 
 The token block carries three shape values, and they match upstream's
