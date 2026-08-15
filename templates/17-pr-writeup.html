@@ -1,0 +1,657 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    17-pr-writeup.html
+  blob:      d13339727964bb48a7eed36547624a0371c8c059
+  converted: 2026-08-15
+  notes:     Ten judgment calls.
+             (1) "Deletion" jobs (.pr-meta .del, file-tour .stat .del,
+             .badge.del, .code .del) map upstream's clay to --danger,
+             not --accent, pairing with --ok on the "add" side of the
+             same add/del pair. Upstream never uses rust in this file,
+             but the job is a negative-direction counterpart to an
+             already-olive positive, which is what --danger is for.
+             (2) .badge.new / .badge.mod / .badge.del were one-off
+             tints (#E4E9DC, --oat, #F3D9CC) forming a matched three-way
+             set next to each other. Sent through
+             color-mix(in srgb, var(--ok|--warn|--danger) 16%, var(--surface))
+             instead of routing .badge.mod through --surface-sunken, so
+             the three badges stay visually distinct from each other and
+             from the page's plain sunken surfaces (same reasoning as
+             the oat-badge call in 01-exploration-code-approaches).
+             (3) .code .str and .code .cm keep upstream's own hues
+             (--olive, --gray-500) but resolve through --code-str /
+             --code-muted by job, even though the literal hex differs
+             from those tokens' own values. .code .kw / .code .fn follow
+             the exact precedent already set in 01-exploration: kw =
+             Tier 1 --clay directly, fn = --code-kw.
+             (4) .code .add / .code .del diff-line highlights sit inside
+             the theme-invariant code panel, so per the rules they may
+             not use --ok/--accent. Rewritten as
+             color-mix(in srgb, var(--olive|--rust) N%, var(--code-bg)),
+             keeping upstream's opacity as the mix percentage, add→olive
+             and del→rust for the reason in (1).
+             (5) .focus .n and .test.done .check are solid fills with a
+             white glyph on top. Tier 2 --accent/--ok would swap in the
+             dark-theme light variants (tuned for text legibility on a
+             dark ground, not as a fill behind white), which would
+             collapse contrast in dark mode. Kept on Tier 1 --clay /
+             --olive directly, theme-invariant by choice.
+             (6) Corner radii of 10px (.code, .focus .item, .tests
+             .test), 5px (.test .check) and 6px (.badge) match no shape
+             token and are left as literals, per the rules.
+             (7) All narrative prose, code and file paths are upstream
+             sample fiction and were replaced with short neutral
+             placeholders naming their slot, per rule 5. That removed
+             both occurrences of upstream's fictional company name.
+             (8) File-by-file tour collapsed to the one entry the task
+             note called for. Picked the "mod" shape (originally
+             comments.ts) over "new" (worker.ts): it is a strict
+             superset of structure, carrying the diff .add/.del line
+             highlighting the "new" shape doesn't have, in addition to
+             the same kw/str/cm/fn code spans.
+             (9) Test-plan items collapsed to two — done and not-done —
+             since those states render differently. Rollout steps
+             collapsed to two — first and last — to keep the
+             :first-child/:last-child radius special-casing and the
+             "+ .step" sibling connector exercised.
+             (10) Before/after list items collapsed from four to two per
+             panel: one plain bullet and one bullet carrying the inline
+             <code>+<strong> stat, since that item has different
+             internal structure than the rest. Focus items and TOC file
+             sub-links collapsed to one each — uniform structure, no
+             state variation.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pull-request write-up</title>
+  <style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text-muted);
+      line-height: 1.55;
+      padding: 56px 32px 120px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page { max-width: 1040px; margin: 0 auto; }
+
+    /* ---------- header ---------- */
+
+    header.page-head { margin-bottom: 44px; max-width: 820px; }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 36px;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .pr-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+    .pr-meta .stat strong { color: var(--text); font-weight: 600; }
+    .pr-meta .add { color: var(--ok); }
+    .pr-meta .del { color: var(--danger); }
+
+    .prompt-box {
+      background: var(--surface-sunken);
+      border: var(--border-width) solid var(--border);
+      border-radius: var(--radius-panel);
+      padding: 16px 20px;
+      font-size: 14.5px;
+      color: var(--text-muted);
+    }
+    .prompt-box .label {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* ---------- layout ---------- */
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      gap: 48px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .toc { display: none; } }
+
+    section { margin-bottom: 56px; scroll-margin-top: 24px; }
+    h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 25px;
+      color: var(--text);
+      margin-bottom: 14px;
+      letter-spacing: -0.01em;
+    }
+    p.lede { font-size: 15.5px; max-width: 680px; margin-bottom: 12px; }
+    p + p.lede { margin-top: 12px; }
+
+    .toc {
+      position: sticky;
+      top: 32px;
+      border-left: var(--border-width) solid var(--border);
+      padding-left: 18px;
+      font-size: 13px;
+    }
+    .toc .t-head {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .toc a { display: block; color: var(--text-muted); text-decoration: none; padding: 4px 0; }
+    .toc a:hover { color: var(--accent); }
+    .toc .sub { padding-left: 12px; color: var(--text-muted); font-size: 12.5px; }
+
+    /* ---------- TL;DR ---------- */
+
+    .tldr {
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-panel);
+      padding: 20px 24px;
+      margin-bottom: 48px;
+      max-width: 760px;
+    }
+    .tldr .k {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .tldr p { font-size: 15px; color: var(--text); }
+
+    /* ---------- before/after ---------- */
+
+    .ba {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin: 22px 0 4px;
+    }
+    @media (max-width: 720px) { .ba { grid-template-columns: 1fr; } }
+    .ba .panel {
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      border-radius: var(--radius-panel);
+      padding: 18px 20px;
+    }
+    .ba .panel.after { border-color: var(--ok); }
+    .ba .k {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .ba .after .k { color: var(--ok); }
+    .ba ul { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+    .ba li::before { content: '·'; color: var(--text-muted); margin-right: 8px; }
+    .ba .after li::before { color: var(--ok); }
+
+    /* ---------- file tour ---------- */
+
+    .file-tour { display: flex; flex-direction: column; gap: 22px; }
+    .file {
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      border-radius: var(--radius-panel);
+      overflow: hidden;
+    }
+    .file summary {
+      padding: 14px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      list-style: none;
+      background: var(--surface-sunken);
+      border-bottom: var(--border-width) solid var(--border);
+    }
+    .file[open] summary { border-bottom-color: var(--border); }
+    .file:not([open]) summary { border-bottom: none; }
+    .file summary::-webkit-details-marker { display: none; }
+    .file summary .chev {
+      width: 8px; height: 8px;
+      border-right: 2px solid var(--text-muted);
+      border-bottom: 2px solid var(--text-muted);
+      transform: rotate(-45deg);
+      transition: transform .15s ease;
+      flex-shrink: 0;
+    }
+    .file[open] summary .chev { transform: rotate(45deg); }
+    .file summary .path {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text);
+      flex: 1;
+    }
+    .file summary .badge {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .badge.new { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); color: var(--ok); }
+    .badge.mod { background: color-mix(in srgb, var(--warn) 16%, var(--surface)); color: var(--text); }
+    .badge.del { background: color-mix(in srgb, var(--danger) 16%, var(--surface)); color: var(--danger); }
+    .file summary .stat { font-family: var(--mono); font-size: 12px; }
+    .file summary .stat .add { color: var(--ok); }
+    .file summary .stat .del { color: var(--danger); }
+    .file .file-body { padding: 18px 20px 22px; }
+    .file .why {
+      font-size: 14.5px;
+      margin-bottom: 14px;
+      max-width: 680px;
+    }
+    .file .why strong { color: var(--text); }
+
+    /* ---------- code ---------- */
+
+    .code {
+      background: var(--code-bg);
+      border-radius: 10px;
+      padding: 16px 18px;
+      overflow-x: auto;
+    }
+    .code pre {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: var(--code-text);
+      white-space: pre;
+    }
+    .code .kw  { color: var(--clay); }
+    .code .str { color: var(--code-str); }
+    .code .cm  { color: var(--code-muted); }
+    .code .fn  { color: var(--code-kw); }
+    .code .add { background: color-mix(in srgb, var(--olive) 22%, var(--code-bg)); display: inline-block; width: 100%; }
+    .code .del { background: color-mix(in srgb, var(--rust) 18%, var(--code-bg)); display: inline-block; width: 100%; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--rust) 60%, var(--code-bg)); }
+
+    /* ---------- review focus ---------- */
+
+    .focus { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+    .focus .item {
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 16px;
+    }
+    .focus .n {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--white);
+      background: var(--clay);
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .focus .t { font-weight: 600; color: var(--text); font-size: 15px; margin-bottom: 2px; }
+    .focus .d { font-size: 13.5px; color: var(--text-muted); }
+    .focus .d code { font-size: 12.5px; }
+
+    /* ---------- test plan ---------- */
+
+    .tests { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+    .test {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      border-radius: 10px;
+      padding: 13px 18px;
+      font-size: 14px;
+    }
+    .test .check {
+      width: 18px; height: 18px;
+      border-radius: 5px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      border: var(--border-width) solid var(--border);
+    }
+    .test.done .check {
+      background: var(--olive);
+      border-color: var(--olive);
+      position: relative;
+    }
+    .test.done .check::after {
+      content: '';
+      position: absolute;
+      left: 5px; top: 2px;
+      width: 5px; height: 9px;
+      border-right: 2px solid var(--white);
+      border-bottom: 2px solid var(--white);
+      transform: rotate(40deg);
+    }
+    .test .label { color: var(--text); }
+    .test .note { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+
+    /* ---------- rollout ---------- */
+
+    .rollout { display: flex; gap: 0; max-width: 780px; }
+    @media (max-width: 720px) { .rollout { flex-direction: column; } }
+    .rollout .step {
+      flex: 1;
+      background: var(--surface);
+      border: var(--border-width) solid var(--border);
+      padding: 16px 18px;
+      position: relative;
+    }
+    .rollout .step:first-child { border-radius: var(--radius-panel) 0 0 var(--radius-panel); }
+    .rollout .step:last-child { border-radius: 0 var(--radius-panel) var(--radius-panel) 0; }
+    .rollout .step + .step { border-left: none; }
+    @media (max-width: 720px) {
+      .rollout .step, .rollout .step:first-child, .rollout .step:last-child { border-radius: var(--radius-panel); }
+      .rollout .step + .step { border-left: var(--border-width) solid var(--border); margin-top: 10px; }
+    }
+    .rollout .step .pct {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .rollout .step .d { font-size: 13px; color: var(--text-muted); }
+    .rollout .step .when { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-head">
+      <div class="eyebrow">Pull request · Review</div>
+      <h1>#100 — One-line change summary</h1>
+      <div class="pr-meta">
+        <span class="stat"><strong>5</strong> files</span>
+        <span class="stat"><span class="add">+40</span> / <span class="del">−20</span></span>
+        <span class="stat">branch <strong>feature-branch</strong> → <strong>main</strong></span>
+        <span class="stat">author <strong>@author</strong></span>
+      </div>
+      <div class="prompt-box">
+        <span class="label">Prompt</span>
+        The request that produced this page, quoted as it was written.
+      </div>
+    </header>
+
+    <div class="layout">
+      <main>
+
+        <div class="tldr">
+          <div class="k">TL;DR</div>
+          <p>One-paragraph summary of the problem, the fix, and the effect it has.</p>
+        </div>
+
+        <!-- ======================= WHY ======================= -->
+
+        <section id="why">
+          <h2>Why</h2>
+          <p class="lede">Context explaining what led to this change and why it matters now.</p>
+
+          <div class="ba">
+            <div class="panel">
+              <div class="k">Before</div>
+              <ul>
+                <li>What used to happen</li>
+                <!-- repeat per bullet -->
+                <li>Metric name on <code>example.path</code>: <strong>value</strong></li>
+              </ul>
+            </div>
+            <div class="panel after">
+              <div class="k">After</div>
+              <ul>
+                <li>What happens now instead</li>
+                <!-- repeat per bullet -->
+                <li>Metric name on <code>example.path</code>: <strong>value</strong></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================= FILE TOUR ======================= -->
+
+        <section id="tour">
+          <h2>File-by-file</h2>
+          <p class="lede">Ordered for reading, not alphabetically. Say where to start and why.</p>
+
+          <div class="file-tour">
+
+            <!-- repeat per file -->
+            <details class="file" open>
+              <summary>
+                <span class="chev"></span>
+                <span class="path">path/to/file.ts</span>
+                <span class="badge mod">mod</span>
+                <span class="stat"><span class="add">+14</span> <span class="del">−62</span></span>
+              </summary>
+              <div class="file-body">
+                <p class="why"><strong>Why this file changed.</strong> One or two sentences on what moved and why, naming the function or call site a reviewer should recognize.</p>
+                <div class="code"><pre>  <span class="kw">const</span> result = <span class="kw">await</span> db.table.<span class="fn">insert</span>(input);
+  <span class="kw">const</span> recipients = <span class="kw">await</span> <span class="fn">resolveList</span>(input.id);
+
+<span class="del">  <span class="kw">for</span> (<span class="kw">const</span> r <span class="kw">of</span> recipients) {</span>
+<span class="del">    <span class="kw">await</span> <span class="fn">sendDirect</span>(r, result);       <span class="cm">// blocked the response</span></span>
+<span class="del">  }</span>
+<span class="add">  <span class="kw">await</span> queue.<span class="fn">insert</span>(recipients.map((r) =&gt;</span>
+<span class="add">    ({ name: <span class="str">'job.name'</span>, data: { id: r.id } })));</span>
+  <span class="kw">return</span> result;</pre></div>
+              </div>
+            </details>
+
+          </div>
+        </section>
+
+        <!-- ======================= FOCUS ======================= -->
+
+        <section id="focus">
+          <h2>Where to focus your review</h2>
+          <div class="focus">
+            <!-- repeat per review-focus item -->
+            <div class="item">
+              <div class="n">1</div>
+              <div>
+                <div class="t">The part that needs the closest look</div>
+                <div class="d">File and line reference, and the failure mode if this logic is wrong.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================= TEST PLAN ======================= -->
+
+        <section id="tests">
+          <h2>Test plan</h2>
+          <div class="tests">
+            <!-- repeat per test -->
+            <div class="test done"><span class="check"></span><div><div class="label">What was tested and how</div><div class="note">Where it ran, and how many cases</div></div></div>
+            <div class="test"><span class="check"></span><div><div class="label">What is still pending</div><div class="note">When it will be done</div></div></div>
+          </div>
+        </section>
+
+        <!-- ======================= ROLLOUT ======================= -->
+
+        <section id="rollout">
+          <h2>Rollout</h2>
+          <p class="lede">Behind <code>feature_flag_name</code>. What stays in place as a fallback, and for how long.</p>
+          <div class="rollout">
+            <!-- repeat per rollout step -->
+            <div class="step"><div class="when">Day 0</div><div class="pct">internal</div><div class="d">Who sees it first, and what gets watched.</div></div>
+            <div class="step"><div class="when">Day 4</div><div class="pct">100%</div><div class="d">Full ramp, and the follow-up cleanup this unblocks.</div></div>
+          </div>
+        </section>
+
+      </main>
+
+      <nav class="toc">
+        <div class="t-head">In this PR</div>
+        <a href="#why">Why</a>
+        <a href="#tour">File-by-file</a>
+        <a href="#tour" class="sub">file name</a>
+        <a href="#focus">Where to focus</a>
+        <a href="#tests">Test plan</a>
+        <a href="#rollout">Rollout</a>
+      </nav>
+    </div>
+
+  </div>
+</body>
+</html>

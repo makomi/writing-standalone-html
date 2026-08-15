@@ -142,11 +142,23 @@ name that is missing, because the file keeps working and renders wrong.
 
 ### Colours the checker cannot see
 
-`scripts/verify.sh` looks for hex. It does not catch `rgba(20, 20, 19,
-0.08)`, `hsl(...)` or a named colour like `tomato`. Those are hardcoded
-colours all the same. Convert a translucent overlay with `color-mix`:
+`scripts/verify.sh` looks for hex inside `<style>` blocks and
+colour-bearing attributes. Three kinds of colour slip past it, and all
+three still get re-tokenized:
 
-    border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+1. `rgba(20, 20, 19, 0.08)`, `hsl(...)`, or a named colour like
+   `tomato`. Convert a translucent overlay with `color-mix`:
+
+       border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+
+2. A colour inside a `<script>` string. `06-component-variants.html`
+   sets `--card-shadow` from JavaScript, and the literal it wrote left
+   the shadow pinned to the light theme the moment a reader touched the
+   control. **Rule 6 protects interaction logic, not colour.** A string
+   holding a colour is colour work, and rewriting it is not a refactor.
+
+3. A colour in an inline `style` attribute that the regex reaches but
+   the eye skips. Check the swatches and chips.
 
 ### Shape tokens
 

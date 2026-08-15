@@ -1,0 +1,662 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    06-component-variants.html
+  blob:      c97b71c3ac7c7919d883eb181eaf25c26c2600e4
+  converted: 2026-08-15
+  notes:     The file-specific brief claimed the grid repeats along
+             two axes, size and state. It does not: the source is a
+             single-axis matrix of six named structural card
+             treatments (A Flat, B Outlined, C Elevated, D Accent
+             stripe, E Inset, F Horizontal). Applied the general
+             rule-4 procedure instead of the brief's note.
+             Six judgment calls:
+             (1) Collapsed the six-card grid to two: C Elevated and
+             F Horizontal. Together they exercise all three
+             live-controlled tokens (padding on both, border on
+             Horizontal, shadow on Elevated), and Horizontal carries
+             the most structural divergence (flex layout, hidden
+             subtitle). All six .v-* CSS rules are kept whole per
+             rule 6 even though only two are used in the retained
+             markup.
+             (2) Toolbar controls (padding slider, border radio
+             group, shadow checkbox) were left fully intact rather
+             than collapsed under rule 4: they are a fixed
+             enumeration of functional states the JS depends on, not
+             repeated sample content.
+             (3) Oat maps to var(--surface-sunken) throughout
+             (avatar circle, .v-inset background) per the default
+             table entry, not the Tier-1 carve-out, because no code
+             block shares either view.
+             (4) Raw rgba() literals re-tokenized via color-mix():
+             chip.olive background (was olive 16%), .v-inset .chip
+             background (was white 60%), .v-inset .ghost-btn
+             border-color (was slate 15%), and the --card-shadow
+             custom property (was slate 8%).
+             (5) The two colour references inside the JavaScript are
+             re-tokenized as well. borderMap hands out --border, and
+             applyShadow mixes --slate instead of repeating an rgba()
+             literal. Rule 6 protects interaction logic, not colour,
+             and leaving these raw would have pinned the live-set
+             border and shadow to the light theme the moment a reader
+             touched either control.
+             (6) Card content (title, subtitle, avatar initials, tag
+             chips, variant-note caption) genericized to neutral
+             slot-naming placeholders per rule 5, mirrored into both
+             retained data-snippet attributes so the hover preview
+             matches the visible card; "Six structural treatments"
+             trimmed to drop the stale count, and the upstream brand
+             prefix dropped from the title.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card variant matrix</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  /* live-controlled tokens, set by the toolbar's JS on load and on
+     every change; --border-width happens to equal upstream's own
+     "solid" width, so it is reused rather than restated. */
+  :root {
+    --card-pad: 20px;
+    --card-border: var(--border-width) solid var(--border);
+    --card-shadow: 0 4px 14px color-mix(in srgb, var(--slate) 8%, transparent);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 28px 80px;
+  }
+
+  header {
+    padding: 48px 0 20px;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 36px;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  header p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0;
+    max-width: 640px;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 28px;
+    padding: 16px 20px;
+    margin: 24px 0 36px;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+  }
+  .control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .control-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .control-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 36px;
+  }
+
+  input[type="range"] {
+    appearance: none;
+    width: 140px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .radio-group {
+    display: inline-flex;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-row);
+    overflow: hidden;
+  }
+  .radio-group label {
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--text-muted);
+    border-right: 1px solid var(--border);
+  }
+  .radio-group label:last-child { border-right: none; }
+  .radio-group input { display: none; }
+  .radio-group input:checked + span {
+    color: var(--text);
+  }
+  .radio-group label:has(input:checked) {
+    background: var(--surface-sunken);
+  }
+
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .check input {
+    appearance: none;
+    width: 16px; height: 16px;
+    border: var(--border-width) solid var(--border);
+    border-radius: 4px;
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+  }
+  .check input:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .check input:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px; top: 0;
+    width: 4px; height: 9px;
+    border: solid var(--surface);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* ---------- Grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  @media (max-width: 960px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .cell {}
+  .variant-label {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 9px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .variant-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+
+  /* ---------- Card base ---------- */
+  .card {
+    border-radius: var(--radius-panel);
+    padding: var(--card-pad);
+    transition: padding 0.15s ease, box-shadow 0.15s ease, border 0.15s ease;
+    cursor: pointer;
+  }
+  .card:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface-sunken);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .card-titles { min-width: 0; }
+  .card-title {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    margin: 0 0 2px;
+    line-height: 1.3;
+  }
+  .card-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chips {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 999px;
+    background: var(--surface-sunken);
+    color: var(--text-muted);
+  }
+  .chip.olive { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); color: var(--ok); }
+  .ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-row);
+    cursor: pointer;
+  }
+  .ghost-btn:hover { background: var(--surface-sunken); }
+
+  /* ---------- Variant treatments ---------- */
+  .v-flat {
+    background: var(--surface);
+    border: none;
+    box-shadow: none;
+  }
+  .v-outlined {
+    background: var(--surface);
+    border: var(--card-border);
+    box-shadow: none;
+  }
+  .v-elevated {
+    background: var(--surface);
+    border: none;
+    box-shadow: var(--card-shadow);
+  }
+  .v-stripe {
+    background: var(--surface);
+    border: var(--card-border);
+    box-shadow: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .v-stripe::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 4px;
+    background: var(--accent);
+  }
+  .v-inset {
+    background: var(--surface-sunken);
+    border: none;
+    box-shadow: none;
+  }
+  .v-inset .chip { background: color-mix(in srgb, var(--surface) 60%, transparent); }
+  .v-inset .ghost-btn { border-color: color-mix(in srgb, var(--text) 15%, transparent); }
+  .v-inset .avatar { background: var(--surface); }
+
+  .v-horizontal {
+    background: var(--surface);
+    border: var(--card-border);
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .v-horizontal .card-head { margin: 0; flex: 1; min-width: 0; }
+  .v-horizontal .chips { margin: 0; }
+  .v-horizontal .card-sub { display: none; }
+  .v-horizontal .ghost-btn { flex-shrink: 0; }
+
+  /* ---------- Snippet panel ---------- */
+  .snippet-panel {
+    margin-top: 40px;
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+  }
+  .snippet-head {
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border-bottom: 1px solid var(--border);
+  }
+  pre#snippet {
+    margin: 0;
+    padding: 20px;
+    background: var(--code-bg);
+    color: var(--code-text);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    min-height: 120px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Card variant matrix</h1>
+    <p>Structural treatments of the <code style="font-family:var(--mono);font-size:13px">&lt;Card /&gt;</code> component. Adjust density and emphasis with the controls, hover a variant to see its prop combo.</p>
+  </header>
+
+  <!-- ---------- Toolbar ---------- -->
+  <div class="toolbar">
+    <div class="control">
+      <span class="control-label">Padding</span>
+      <input id="ctl-pad" type="range" min="12" max="32" value="20" step="2">
+      <span class="control-value" id="pad-out">20px</span>
+    </div>
+
+    <div class="control">
+      <span class="control-label">Border</span>
+      <div class="radio-group">
+        <label><input type="radio" name="border" value="none"><span>none</span></label>
+        <label><input type="radio" name="border" value="hairline" checked><span>hairline</span></label>
+        <label><input type="radio" name="border" value="solid"><span>solid</span></label>
+      </div>
+    </div>
+
+    <div class="control">
+      <label class="check">
+        <input id="ctl-shadow" type="checkbox" checked>
+        Show shadow
+      </label>
+    </div>
+  </div>
+
+  <!-- ---------- Grid ---------- -->
+  <div class="grid" id="grid">
+
+    <!-- repeat per variant -->
+    <!-- C: Elevated -->
+    <div class="cell">
+      <span class="variant-label">C &middot; Elevated</span>
+      <div class="card v-elevated"
+           data-snippet='<Card variant="elevated" padding={PAD} shadow="md">
+  <Card.Header avatar title="Card title" subtitle="Meta line" />
+  <Card.Meta tags={["Tag", "Status"]} />
+  <Button variant="ghost">Open</Button>
+</Card>'>
+        <div class="card-head">
+          <div class="avatar">AB</div>
+          <div class="card-titles">
+            <p class="card-title">Card title</p>
+            <p class="card-sub">Meta line</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip">Tag</span>
+          <span class="chip olive">Status</span>
+        </div>
+        <button class="ghost-btn">Open</button>
+      </div>
+      <p class="variant-note">Where this treatment fits.</p>
+    </div>
+
+    <!-- F: Horizontal -->
+    <div class="cell">
+      <span class="variant-label">F &middot; Horizontal</span>
+      <div class="card v-horizontal"
+           data-snippet='<Card variant="outlined" layout="row" padding={PAD} border="BORDER">
+  <Card.Header avatar title="Card title" />
+  <Card.Meta tags={["Tag", "Status"]} />
+  <Button variant="ghost">Open</Button>
+</Card>'>
+        <div class="card-head">
+          <div class="avatar">AB</div>
+          <div class="card-titles">
+            <p class="card-title">Card title</p>
+            <p class="card-sub">Meta line</p>
+          </div>
+        </div>
+        <div class="chips">
+          <span class="chip">Tag</span>
+          <span class="chip olive">Status</span>
+        </div>
+        <button class="ghost-btn">Open</button>
+      </div>
+      <p class="variant-note">Where this treatment fits.</p>
+    </div>
+
+  </div>
+
+  <!-- ---------- Snippet ---------- -->
+  <div class="snippet-panel">
+    <div class="snippet-head">JSX &mdash; hover a variant above</div>
+    <pre id="snippet">// hover a card to preview its props</pre>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var pad = document.getElementById('ctl-pad');
+    var padOut = document.getElementById('pad-out');
+    var shadow = document.getElementById('ctl-shadow');
+    var snippet = document.getElementById('snippet');
+    var currentBorder = 'hairline';
+
+    var borderMap = {
+      none: 'none',
+      hairline: '1px solid var(--border)',
+      solid: 'var(--border-width) solid var(--border)'
+    };
+
+    function applyPad() {
+      root.style.setProperty('--card-pad', pad.value + 'px');
+      padOut.textContent = pad.value + 'px';
+    }
+    function applyBorder(v) {
+      currentBorder = v;
+      root.style.setProperty('--card-border', borderMap[v]);
+    }
+    function applyShadow() {
+      root.style.setProperty('--card-shadow',
+        shadow.checked
+          ? '0 4px 14px color-mix(in srgb, var(--slate) 8%, transparent)'
+          : 'none');
+    }
+
+    pad.addEventListener('input', applyPad);
+    shadow.addEventListener('change', applyShadow);
+    document.querySelectorAll('input[name="border"]').forEach(function (r) {
+      r.addEventListener('change', function () { applyBorder(r.value); });
+    });
+
+    document.querySelectorAll('.card').forEach(function (card) {
+      card.addEventListener('mouseenter', function () {
+        var raw = card.getAttribute('data-snippet') || '';
+        snippet.textContent = raw
+          .replace(/PAD/g, pad.value)
+          .replace(/BORDER/g, currentBorder);
+      });
+    });
+
+    applyPad(); applyBorder('hairline'); applyShadow();
+  })();
+</script>
+</body>
+</html>
