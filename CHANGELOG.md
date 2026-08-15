@@ -13,8 +13,8 @@ measurements — lives in commit bodies. See the changelog rules in
 ## [Unreleased]
 
 No user-facing changes yet. The skill has no `SKILL.md`, so an install
-would not be discovered, and `templates/` is empty. Everything built so
-far is the machinery that produces the templates.
+would not be discovered and the templates built so far cannot be
+reached. Everything in place is the machinery that produces them.
 
 `v1.0.0` is the first release with a user-facing surface: twenty
 templates and the selection table that triggers them. See

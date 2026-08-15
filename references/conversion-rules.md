@@ -94,6 +94,18 @@ and do not convert these to Tier 2:
 | `#c9b98a` | keyword, identifier | `var(--code-kw)` |
 | `#a8bc8c` | string literal | `var(--code-str)` |
 
+Some files colour more syntax classes than there are code roles.
+`01-exploration-code-approaches.html` paints keywords and identifiers
+apart, and the roles carry one colour for both. When that happens, take
+the extra colour from Tier 1 — `var(--clay)`, `var(--olive)` — and not
+from Tier 2. The panel is theme-invariant by design, so a Tier 2 role
+would flip out from under a ground that never moves. Record it in the
+header notes.
+
+Never reach for `var(--accent)` or `var(--ok)` inside a code panel.
+They resolve to the deep variants tuned for ivory, and on a near-black
+ground they go muddy.
+
 ### Everything else
 
 Upstream carries roughly 50 further one-off values: gradient stops,
@@ -116,13 +128,37 @@ one-offs is a list, not a rule. Apply this order:
 4. **Anything left** is a judgment call. Pick the nearest role by job,
    and record the decision in the header notes.
 
+### Shape tokens
+
+The token block carries three shape values, and they match upstream's
+own numbers exactly. Use them wherever the number already matches, so a
+later change to the house radius reaches every template:
+
+| Upstream value | Token |
+|---|---|
+| `12px` radius on a panel, card or code block | `var(--radius-panel)` |
+| `8px` radius on a row, chip, badge or table | `var(--radius-row)` |
+| `1.5px` border width | `var(--border-width)` |
+
+Leave any other number alone. A `4px` radius on inline code has no
+token, and inventing one to cover a single use is how a token system
+turns into a second stylesheet.
+
 ## 4. Collapse repeated content
 
 Find every set of repeated sibling elements — ticket rows, timeline
 entries, flag toggles, slides, swatches, table rows. Keep exactly one.
-Delete the rest. Mark the survivor:
+Delete the rest. Mark the survivor with a comment on the line above the
+element it describes, naming the unit of repetition:
 
     <!-- repeat per ticket -->
+
+**Leave the layout CSS alone.** A three-column grid keeps
+`repeat(3, minmax(0, 1fr))` after two of its three children are
+deleted. The retained instance is meant to sit in the real layout, and
+the page that gets generated from the template fills the other slots.
+Rewriting the grid to match the sample would hand every generated page
+the wrong layout.
 
 **Judgment:** pick the instance that exercises the most structure. A
 ticket row carrying a label, an assignee and a due date teaches more
