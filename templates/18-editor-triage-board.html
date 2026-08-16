@@ -1,0 +1,690 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    18-editor-triage-board.html
+  blob:      bbaa55b58a7ea18f6a23036319afece7112b8d01
+  converted: 2026-08-15
+  notes:     Six judgment calls.
+             (1) All four columns are kept. Each carries a different
+             top-border colour keyed off its data-col, so one column
+             would drop three treatments, and the export walks the
+             whole set. The twenty-four tickets collapse to four, one
+             per tag, one per column, which is also what keeps every
+             column non-empty and the per-column count and estimate
+             visibly working.
+             (2) The four owner tints were oat, an olive tint, a clay
+             tint and a grey. None has a token. They became
+             var(--surface-sunken), an --ok tint, an --accent tint and
+             a --border-strong tint over the surface: four steps that
+             stay apart in both themes. An avatar tint is decoration,
+             so no meaning is lost by re-hueing it.
+             (3) The clay and olive tag tints — background, text and
+             border each a separate one-off — became color-mix over
+             var(--surface) and var(--border). #5C6F44, the feat tag's
+             text, is upstream's own deep olive and maps to var(--ok).
+             (4) .col-foot pairs #87867f with #3d3d3a, both of which map
+             to var(--text-muted), which would erase the emphasis on the
+             point total. The bold half takes var(--text) instead. This
+             is the two-muted-levels escalation the rules ask to be
+             recorded.
+             (5) The primary button was slate on ivory, a neutral dark
+             button rather than an accent one, and maps to var(--text)
+             on var(--bg) so it inverts with the theme.
+             (6) Prose and data specific to the fictional product (page
+             title, eyebrow, standfirst, column rationales, every
+             ticket, the markdown export heading) are replaced with
+             neutral placeholders.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Triage board</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 32px 64px;
+  }
+
+  /* ---------- header ---------- */
+  header { margin-bottom: 22px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+  }
+  .sub {
+    color: var(--text-muted);
+    max-width: 620px;
+    margin: 0;
+  }
+  .hintline {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .hintline::before {
+    content: "›";
+    color: var(--accent);
+    margin-right: 6px;
+  }
+
+  /* ---------- toolbar ---------- */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0 12px;
+    margin-bottom: 14px;
+    border-bottom: var(--border-width) solid var(--border);
+  }
+  .summary {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+  }
+  .summary b { color: var(--text); font-weight: 600; }
+  .summary .dot { color: var(--border); margin: 0 4px; }
+  .spacer { flex: 1; }
+  .filter-active {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    border: var(--border-width) solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+    display: none;
+  }
+  .filter-active.on { display: inline-block; }
+  .filter-active:hover { border-color: var(--accent); }
+  button.primary {
+    background: var(--text);
+    color: var(--bg);
+    border: var(--border-width) solid var(--text);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 16px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+  button.primary:hover { background: var(--text-muted); }
+  button.primary.copied { background: var(--ok); border-color: var(--ok); }
+  button.ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: var(--border-width) solid var(--border);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 16px;
+    cursor: pointer;
+  }
+  button.ghost:hover { border-color: var(--border-strong); }
+
+  /* ---------- board ---------- */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .col {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+  }
+  .col[data-col="now"]   { border-top: 3px solid var(--accent); }
+  .col[data-col="next"]  { border-top: 3px solid var(--ok); }
+  .col[data-col="later"] { border-top: 3px solid var(--border-strong); }
+  .col[data-col="cut"]   { border-top: 3px solid var(--border); }
+  .col.dragover {
+    outline: 2px dashed var(--accent);
+    outline-offset: -6px;
+    background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  }
+  .col-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--surface);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 14px 14px 10px;
+    border-bottom: var(--border-width) solid var(--surface-sunken);
+  }
+  .col-head h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 17px;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .col-head .count {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border: var(--border-width) solid var(--border);
+    border-radius: 999px;
+    padding: 1px 8px;
+    min-width: 26px;
+    text-align: center;
+  }
+  .col-body {
+    padding: 10px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 60px;
+  }
+  .col-foot {
+    border-top: var(--border-width) solid var(--surface-sunken);
+    padding: 8px 14px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+  .col-foot b { color: var(--text); font-weight: 600; }
+
+  /* ---------- ticket card ---------- */
+  .ticket {
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-row);
+    padding: 10px 11px 9px;
+    cursor: grab;
+    user-select: none;
+    transition: border-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  }
+  .ticket:hover { border-color: var(--border-strong); box-shadow: 0 1px 3px color-mix(in srgb, var(--slate) 6%, transparent); }
+  .ticket:active { cursor: grabbing; }
+  .ticket.dragging { opacity: .4; }
+  .ticket.dim { opacity: .25; }
+  .ticket-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .tid {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 999px;
+    padding: 1px 7px 2px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .tag:hover { filter: brightness(0.96); }
+  .tag-bug   { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
+  .tag-feat  { background: color-mix(in srgb, var(--ok) 16%, var(--surface)); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 30%, var(--border)); }
+  .tag-chore { background: var(--surface-sunken); color: var(--text-muted); border-color: var(--border); }
+  .tag-debt  { background: var(--surface-sunken); color: var(--text-muted); border-color: var(--border); }
+  .est {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    border: var(--border-width) solid var(--border);
+    border-radius: 4px;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ttitle {
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--text);
+    margin-bottom: 7px;
+  }
+  .ticket-bot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* Owner tints: four steps, decoration only. */
+  .owner {
+    font-family: var(--mono);
+    font-size: 10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--surface-sunken);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+  }
+  .owner.o2 { background: color-mix(in srgb, var(--ok) 18%, var(--surface)); }
+  .owner.o3 { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+  .owner.o4 { background: color-mix(in srgb, var(--border-strong) 25%, var(--surface)); }
+
+  @media (max-width: 920px) {
+    .board { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Project / editor / document kind</div>
+    <h1>Triage board</h1>
+    <p class="sub">
+      Two or three sentences saying what is on the board, how it was
+      pre-sorted, and what the reader does with the result once the
+      columns look right.
+    </p>
+    <div class="hintline">drag tickets between columns &nbsp;·&nbsp; click a tag to filter</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="summary" id="summary"></div>
+    <div class="spacer"></div>
+    <button class="filter-active" id="filterBadge"></button>
+    <button class="ghost" id="resetBtn">Reset</button>
+    <button class="primary" id="copyBtn">Copy as markdown</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+</div>
+
+<script>
+  // ---------- data ----------
+  var COLUMNS = [
+    // repeat per column; the key drives the column's top-border colour
+    { key: 'now',   label: 'Now',   rationale: 'One line saying what earns a place in this column.' },
+    { key: 'next',  label: 'Next',  rationale: 'One line saying what earns a place in this column.' },
+    { key: 'later', label: 'Later', rationale: 'One line saying what earns a place in this column.' },
+    { key: 'cut',   label: 'Cut',   rationale: 'One line saying what earns a place in this column.' }
+  ];
+
+  var EST_PTS = { S: 1, M: 2, L: 3 };
+
+  // tag, est, owner, col — one ticket per tag, one per column
+  var INITIAL = [
+    // repeat per ticket
+    { id: 'TKT-001', title: 'One-line summary of the ticket',  tag: 'bug',   est: 'M', owner: 'AA', col: 'now' },
+    { id: 'TKT-002', title: 'One-line summary of the ticket',  tag: 'feat',  est: 'S', owner: 'BB', col: 'next' },
+    { id: 'TKT-003', title: 'One-line summary of the ticket',  tag: 'chore', est: 'M', owner: 'CC', col: 'later' },
+    { id: 'TKT-004', title: 'One-line summary of the ticket',  tag: 'debt',  est: 'L', owner: 'DD', col: 'cut' }
+  ];
+
+  var OWNER_CLASS = { AA: 'o1', BB: 'o2', CC: 'o3', DD: 'o4' };
+
+  var tickets = [];          // live state
+  var activeFilter = null;   // tag string or null
+  var dragId = null;
+
+  // ---------- build DOM ----------
+  var board = document.getElementById('board');
+  var colBodies = {};
+  var colCounts = {};
+  var colFoots = {};
+
+  COLUMNS.forEach(function (c) {
+    var col = document.createElement('section');
+    col.className = 'col';
+    col.dataset.col = c.key;
+
+    var head = document.createElement('div');
+    head.className = 'col-head';
+    var h2 = document.createElement('h2');
+    h2.textContent = c.label;
+    var count = document.createElement('span');
+    count.className = 'count';
+    head.appendChild(h2);
+    head.appendChild(count);
+
+    var body = document.createElement('div');
+    body.className = 'col-body';
+
+    var foot = document.createElement('div');
+    foot.className = 'col-foot';
+
+    col.appendChild(head);
+    col.appendChild(body);
+    col.appendChild(foot);
+    board.appendChild(col);
+
+    colBodies[c.key] = body;
+    colCounts[c.key] = count;
+    colFoots[c.key] = foot;
+
+    // drop targets
+    col.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('dragover');
+    });
+    col.addEventListener('dragleave', function (e) {
+      if (!col.contains(e.relatedTarget)) col.classList.remove('dragover');
+    });
+    col.addEventListener('drop', function (e) {
+      e.preventDefault();
+      col.classList.remove('dragover');
+      if (!dragId) return;
+      var t = tickets.find(function (x) { return x.id === dragId; });
+      if (t && t.col !== c.key) { t.col = c.key; render(); }
+    });
+  });
+
+  function makeCard(t) {
+    var card = document.createElement('article');
+    card.className = 'ticket';
+    card.draggable = true;
+    card.dataset.id = t.id;
+    if (activeFilter && t.tag !== activeFilter) card.classList.add('dim');
+
+    var top = document.createElement('div');
+    top.className = 'ticket-top';
+    var tid = document.createElement('span');
+    tid.className = 'tid';
+    tid.textContent = t.id;
+    var tag = document.createElement('button');
+    tag.type = 'button';
+    tag.className = 'tag tag-' + t.tag;
+    tag.textContent = t.tag;
+    tag.addEventListener('click', function (e) {
+      e.stopPropagation();
+      activeFilter = (activeFilter === t.tag) ? null : t.tag;
+      render();
+    });
+    var est = document.createElement('span');
+    est.className = 'est';
+    est.textContent = t.est;
+    top.appendChild(tid);
+    top.appendChild(tag);
+    top.appendChild(est);
+
+    var title = document.createElement('div');
+    title.className = 'ttitle';
+    title.textContent = t.title;
+
+    var bot = document.createElement('div');
+    bot.className = 'ticket-bot';
+    var owner = document.createElement('span');
+    owner.className = 'owner ' + (OWNER_CLASS[t.owner] || 'o1');
+    owner.textContent = t.owner;
+    bot.appendChild(owner);
+
+    card.appendChild(top);
+    card.appendChild(title);
+    card.appendChild(bot);
+
+    card.addEventListener('dragstart', function (e) {
+      dragId = t.id;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', t.id);
+    });
+    card.addEventListener('dragend', function () {
+      dragId = null;
+      card.classList.remove('dragging');
+      document.querySelectorAll('.col.dragover').forEach(function (el) {
+        el.classList.remove('dragover');
+      });
+    });
+
+    return card;
+  }
+
+  function render() {
+    COLUMNS.forEach(function (c) { colBodies[c.key].innerHTML = ''; });
+    var counts = {};
+    var pts = {};
+    COLUMNS.forEach(function (c) { counts[c.key] = 0; pts[c.key] = 0; });
+
+    tickets.forEach(function (t) {
+      colBodies[t.col].appendChild(makeCard(t));
+      counts[t.col] += 1;
+      pts[t.col] += EST_PTS[t.est] || 0;
+    });
+
+    COLUMNS.forEach(function (c) {
+      colCounts[c.key].textContent = counts[c.key];
+      colFoots[c.key].innerHTML = 'estimate <b>' + pts[c.key] + ' pt' + (pts[c.key] === 1 ? '' : 's') + '</b>';
+    });
+
+    var summary = document.getElementById('summary');
+    summary.innerHTML = COLUMNS.map(function (c) {
+      return '<b>' + counts[c.key] + '</b>&nbsp;' + c.key;
+    }).join('<span class="dot">·</span>');
+
+    var badge = document.getElementById('filterBadge');
+    if (activeFilter) {
+      badge.textContent = 'filter: ' + activeFilter + ' ×';
+      badge.classList.add('on');
+    } else {
+      badge.classList.remove('on');
+    }
+  }
+
+  document.getElementById('filterBadge').addEventListener('click', function () {
+    activeFilter = null;
+    render();
+  });
+
+  // ---------- export ----------
+  function buildMarkdown() {
+    var lines = [];
+    lines.push('# Triage board');
+    lines.push('');
+    COLUMNS.forEach(function (c) {
+      var rows = tickets.filter(function (t) { return t.col === c.key; });
+      var pts = rows.reduce(function (s, t) { return s + (EST_PTS[t.est] || 0); }, 0);
+      lines.push('## ' + c.label + ' (' + rows.length + ' · ' + pts + ' pts)');
+      lines.push('');
+      lines.push('_' + c.rationale + '_');
+      lines.push('');
+      rows.forEach(function (t) {
+        lines.push('- **' + t.id + '** ' + t.title + ' — ' + t.tag + ', ' + t.est + ', ' + t.owner);
+      });
+      lines.push('');
+    });
+    return lines.join('\n');
+  }
+
+  var copyBtn = document.getElementById('copyBtn');
+  var copyTimer = null;
+  copyBtn.addEventListener('click', function () {
+    var md = buildMarkdown();
+    function flash() {
+      copyBtn.textContent = 'Copied ✓';
+      copyBtn.classList.add('copied');
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(function () {
+        copyBtn.textContent = 'Copy as markdown';
+        copyBtn.classList.remove('copied');
+      }, 1200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(md).then(flash, flash);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = md;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      flash();
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function () {
+    tickets = INITIAL.map(function (t) { return Object.assign({}, t); });
+    activeFilter = null;
+    render();
+  });
+
+  // ---------- init ----------
+  tickets = INITIAL.map(function (t) { return Object.assign({}, t); });
+  render();
+</script>
+</body>
+</html>

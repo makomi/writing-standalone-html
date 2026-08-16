@@ -1,0 +1,688 @@
+<!--
+  Template derived from anthropics/html-effectiveness
+  upstream:  https://github.com/anthropics/html-effectiveness
+  commit:    58c305be97f47b26b678f2c07dec01d4242268ec
+  source:    03-code-review-pr.html
+  blob:      c1a2175cd6a67638f98ec9796b2ac02ebf9efebe
+  converted: 2026-08-15
+  notes:     Six judgment calls.
+             (1) The three-step risk scale is the reason this file was
+             flagged. Upstream runs olive → a warm tan (#B89B6E dot,
+             #7A6A4F text, oat ground) → clay, and this palette has no
+             third hue: --warn and --accent are the same clay on
+             purpose. The middle step maps to the neutral band instead
+             — var(--surface-sunken) ground, var(--text-muted) text,
+             var(--border-strong) dot. The scale then reads safe,
+             neutral, flagged, which stays legible in both themes
+             without inventing an amber the token file forbids.
+             (2) The diff panel is theme-invariant, so its add and del
+             washes and marks take Tier 1 var(--olive) and var(--rust)
+             rather than var(--ok) and var(--danger). The deep variants
+             are tuned for ivory and go muddy on the near-black ground.
+             The hunk row's rgba(255,255,255,0.04) becomes a color-mix
+             over var(--white), which is the same value.
+             (3) The risk-map highlight wrote
+             rgba(217,119,87,0.35) into an inline style from
+             JavaScript, which pinned the flash to the light theme. It
+             is now a .flash class the script toggles, so the colour
+             lives in the stylesheet and follows the theme. Rule 6
+             protects interaction logic, not colour.
+             (4) One file card is kept rather than three. It carries
+             both comment kinds, blocking and nit, and one diff row of
+             each kind — hunk, context, addition, deletion — because
+             those are treatments rather than repetitions. One
+             collapsed file is kept beside it for the same reason.
+             (5) The risk map keeps one chip per level and the legend
+             keeps all three, for the same reason.
+             (6) Prose and data specific to the fictional pull request
+             (title, author, branch, every file path, the diff
+             contents, the review comments, the next steps) are
+             replaced with neutral placeholders. The diff keeps its
+             shape and its line numbers: a diff with no lines has no
+             shape.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review summary</title>
+<style>
+/* TOKENS:BEGIN
+   Source of truth: references/design-system.css in writing-standalone-html.
+   Embedded verbatim in every template. Do not edit a copy in place —
+   edit this file and re-stamp. Tier 1 is the fixed palette; Tier 2 is
+   the semantic layer and the only tier that changes with theme. */
+:root {
+  /* Tier 1 — raw palette, from anthropics/html-effectiveness */
+  --ivory:      #faf9f5;
+  --slate:      #141413;
+  --clay:       #d97757;
+  --oat:        #e3dacc;
+  --olive:      #788c5d;
+  --rust:       #b04a3f;
+  --gray-100:   #f0eee6;
+  --gray-300:   #d1cfc5;
+  --gray-500:   #87867f;
+  --gray-700:   #3d3d3a;
+  --white:      #ffffff;
+
+  /* Tier 1 — added by this project, never in upstream.
+     Deep variants carry the accent hues at text-legible contrast on
+     ivory; upstream's clay reaches only 2.96:1 there and its olive
+     only 3.49:1, both short of the 4.5:1 a status label needs.
+     Light variants do the same job against the dark ground. */
+  --clay-deep:   #c0502b;
+  --olive-deep:  #677850;
+  --ink:         #1a1a18;
+  --ink-raised:  #232320;
+  --clay-light:  #e89b80;
+  --olive-light: #9bb07a;
+  --rust-light:  #d9695c;
+
+  /* Tier 2 — semantic roles, light theme */
+  --bg:             var(--ivory);
+  --surface:        var(--white);
+  --surface-sunken: var(--gray-100);
+  --text:           var(--slate);
+  --text-muted:     var(--gray-700);
+  --border:         var(--gray-300);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-deep);
+  --ok:             var(--olive-deep);
+  --warn:           var(--clay-deep);
+  --danger:         var(--rust);
+  /* --warn and --accent are the same clay on purpose. Upstream carries
+     three hues and this project adds only variants of them, never a
+     fourth. A severity scale still reads in three colours — olive,
+     clay, rust — and a warning that lands next to a link is told apart
+     by its shape, not its hue. Do not add an amber to separate them. */
+
+  /* Type and shape, normalized from upstream's drifting spellings */
+  --serif: ui-serif, Georgia, "Times New Roman", serif;
+  --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-panel: 12px;
+  --radius-row:   8px;
+  --border-width: 1.5px;
+}
+
+/* Dark theme, applied twice from one set of values. The media query
+   serves readers whose system asks for dark; the attribute selector
+   serves a page that sets data-theme="dark" itself. The
+   :not([data-theme="light"]) guard is what lets an explicit light
+   choice beat the system setting. Keep the two blocks identical —
+   tests/test_tokens.py fails if they drift apart. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             var(--ink);
+    --surface:        var(--ink-raised);
+    --surface-sunken: var(--slate);
+    --text:           var(--ivory);
+    --text-muted:     var(--gray-300);
+    --border:         var(--gray-700);
+    --border-strong:  var(--gray-500);
+    --accent:         var(--clay-light);
+    --ok:             var(--olive-light);
+    --warn:           var(--clay-light);
+    --danger:         var(--rust-light);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:             var(--ink);
+  --surface:        var(--ink-raised);
+  --surface-sunken: var(--slate);
+  --text:           var(--ivory);
+  --text-muted:     var(--gray-300);
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-500);
+  --accent:         var(--clay-light);
+  --ok:             var(--olive-light);
+  --warn:           var(--clay-light);
+  --danger:         var(--rust-light);
+}
+
+/* Code blocks are theme-invariant on purpose: they stay dark in light
+   mode the way an editor does, which is what upstream already did.
+   These roles are therefore defined once and never redefined for dark.
+   Values are upstream's own syntax palette. */
+:root {
+  --code-bg:    var(--slate);
+  --code-text:  #e8e6de;
+  --code-muted: #b8b6ac;
+  --code-kw:    #c9b98a;
+  --code-str:   #a8bc8c;
+}
+
+/* --border is a decorative hairline: a row rule, a panel edge. It
+   carries no meaning and has no contrast floor, which is why upstream's
+   soft #d1cfc5 survives unchanged. --border-strong is for anything
+   whose boundary conveys state — an input, a toggle, a focus ring —
+   and clears 3:1 against the page in both themes. Reach for the strong
+   one whenever the edge is the affordance. */
+/* TOKENS:END */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 48px 24px 80px;
+  }
+
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Header ---------- */
+  header.pr-head {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    padding: 28px 32px;
+    background: var(--surface);
+    margin-bottom: 36px;
+  }
+
+  .repo-line {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 30px;
+    line-height: 1.25;
+    color: var(--text);
+    margin-bottom: 18px;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface-sunken);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    border: var(--border-width) solid var(--border);
+  }
+
+  .author-name { font-weight: 500; color: var(--text); }
+  .author-sub { font-size: 12px; color: var(--text-muted); }
+
+  .branch {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-row);
+    padding: 6px 10px;
+  }
+  .branch .arrow { color: var(--text-muted); margin: 0 6px; }
+
+  .stat {
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .stat .add { color: var(--ok); font-weight: 600; }
+  .stat .del { color: var(--danger); font-weight: 600; }
+  .stat .files { color: var(--text-muted); margin-left: 10px; }
+
+  /* ---------- Section blocks ---------- */
+  section { margin-bottom: 40px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 21px;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  .prose ul {
+    list-style: none;
+    padding: 0;
+  }
+  .prose li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 10px;
+  }
+  .prose li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    background: var(--border-strong);
+    border-radius: 2px;
+  }
+
+  /* ---------- Risk map ---------- */
+  .risk-map {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius-row);
+    border: var(--border-width) solid var(--border);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text);
+    text-decoration: none;
+    background: var(--surface);
+    transition: transform 0.12s ease;
+  }
+  .chip:hover { transform: translateY(-1px); }
+
+  .chip .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .chip.safe { background: color-mix(in srgb, var(--ok) 10%, var(--surface)); border-color: color-mix(in srgb, var(--ok) 45%, var(--border)); }
+  .chip.safe .dot { background: var(--ok); }
+  .chip.medium { background: var(--surface-sunken); }
+  .chip.medium .dot { background: var(--border-strong); }
+  .chip.attention { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+  .chip.attention .dot { background: var(--accent); }
+
+  .legend {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 18px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend .dot.safe { background: var(--ok); }
+  .legend .dot.medium { background: var(--border-strong); }
+  .legend .dot.attention { background: var(--accent); }
+
+  /* ---------- File sections ---------- */
+  .file-card {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    margin-bottom: 24px;
+    overflow: hidden;
+    scroll-margin-top: 20px;
+  }
+
+  /* Flash on arrival from a risk-map anchor. The colour lives here so
+     it follows the theme; the script only toggles the class. */
+  .file-card.flash,
+  details.file-collapsed.flash {
+    transition: box-shadow 180ms ease;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+
+  .file-head {
+    padding: 16px 20px;
+    border-bottom: var(--border-width) solid var(--surface-sunken);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .file-path {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .file-delta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .file-delta .add { color: var(--ok); }
+  .file-delta .del { color: var(--danger); }
+
+  .risk-tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  .risk-tag.safe { background: color-mix(in srgb, var(--ok) 15%, var(--surface)); color: var(--ok); }
+  .risk-tag.medium { background: var(--surface-sunken); color: var(--text-muted); }
+  .risk-tag.attention { background: color-mix(in srgb, var(--accent) 15%, var(--surface)); color: var(--accent); }
+
+  /* ---------- Diff block ---------- */
+  /* Theme-invariant, like every code panel: Tier 1 hues only. */
+  .diff {
+    background: var(--code-bg);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .diff-row {
+    display: grid;
+    grid-template-columns: 48px 18px 1fr;
+    align-items: baseline;
+    padding: 0 14px 0 0;
+    white-space: pre;
+  }
+  .diff-row .ln {
+    text-align: right;
+    padding-right: 14px;
+    color: var(--code-muted);
+    user-select: none;
+  }
+  .diff-row .mark {
+    text-align: center;
+    color: var(--code-muted);
+  }
+  .diff-row .code { color: var(--code-text); }
+  .diff-row.ctx .code { color: var(--code-muted); }
+  .diff-row.add { background: color-mix(in srgb, var(--olive) 15%, transparent); }
+  .diff-row.add .mark { color: var(--olive); }
+  .diff-row.del { background: color-mix(in srgb, var(--rust) 15%, transparent); }
+  .diff-row.del .mark { color: var(--rust); }
+  .diff-row.hunk {
+    background: color-mix(in srgb, var(--white) 4%, transparent);
+    color: var(--code-muted);
+  }
+  .diff-row.hunk .code { color: var(--code-muted); }
+
+  /* ---------- Review comments ---------- */
+  .comments {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--surface-sunken);
+  }
+
+  .bubble {
+    position: relative;
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-left-width: 4px;
+    border-radius: var(--radius-row);
+    padding: 12px 14px 12px 16px;
+    max-width: 680px;
+  }
+  .bubble.blocking { border-left-color: var(--accent); }
+  .bubble.nit { border-left-color: var(--border); }
+
+  .bubble::before {
+    content: "";
+    position: absolute;
+    left: -9px;
+    top: 16px;
+    width: 12px;
+    height: 12px;
+    background: var(--surface);
+    border-left: var(--border-width) solid var(--border);
+    border-bottom: var(--border-width) solid var(--border);
+    transform: rotate(45deg);
+  }
+  .bubble.blocking::before { border-left-color: var(--accent); border-bottom-color: var(--accent); }
+
+  .bubble .anchor {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .bubble .label {
+    display: inline-block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .bubble.blocking .label { color: var(--accent); }
+  .bubble.nit .label { color: var(--text-muted); }
+  .bubble p { font-size: 13.5px; color: var(--text-muted); }
+  .bubble code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-sunken);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ---------- Collapsed files ---------- */
+  details.file-collapsed {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    margin-bottom: 14px;
+    scroll-margin-top: 20px;
+  }
+  details.file-collapsed summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  details.file-collapsed summary::-webkit-details-marker { display: none; }
+  details.file-collapsed summary::after {
+    content: "+";
+    font-family: var(--mono);
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+  details.file-collapsed[open] summary::after { content: "−"; }
+  details.file-collapsed .body {
+    padding: 0 20px 16px;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Footer ---------- */
+  footer.next-steps {
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel);
+    background: var(--surface);
+    padding: 24px 28px;
+  }
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .checklist input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+    accent-color: var(--ok);
+    cursor: pointer;
+  }
+  .checklist label { cursor: pointer; flex: 1; }
+  .checklist code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-sunken);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* Inline code inside prose, matching the comment bubbles. */
+  .prose code, .file-collapsed .body code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-sunken);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="pr-head">
+    <div class="repo-line">repository &middot; Pull Request #000</div>
+    <h1>What the change does, in one line</h1>
+    <div class="meta-row">
+      <div class="author">
+        <div class="avatar">AA</div>
+        <div>
+          <div class="author-name">Author name</div>
+          <div class="author-sub">opened 2 days ago</div>
+        </div>
+      </div>
+      <div class="branch">
+        source-branch <span class="arrow">→</span> target-branch
+      </div>
+      <div class="stat">
+        <span class="add">+100</span> / <span class="del">−25</span>
+        <span class="files">6 files changed</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="prose">
+    <h2>What this PR does</h2>
+    <ul>
+      <!-- repeat per claim -->
+      <li>One or two sentences per change, naming the file or symbol it
+        touches — <code>aFunction()</code> — and what a reader will
+        notice differently once it lands.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Risk map</h2>
+    <div class="risk-map">
+      <!-- repeat per file, one per risk level -->
+      <a class="chip attention" href="#file-one"><span class="dot"></span>path/to/file.ext</a>
+      <a class="chip medium" href="#file-two"><span class="dot"></span>path/to/file.ext</a>
+      <a class="chip safe" href="#file-two"><span class="dot"></span>path/to/file.ext</a>
+    </div>
+    <div class="legend">
+      <span><span class="dot safe"></span> safe</span>
+      <span><span class="dot medium"></span> worth a look</span>
+      <span><span class="dot attention"></span> needs attention</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Files</h2>
+
+    <!-- repeat per reviewed file -->
+    <article class="file-card" id="file-one">
+      <div class="file-head">
+        <div>
+          <div class="file-path">path/to/file.ext</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="risk-tag attention">needs attention</span>
+          <span class="file-delta"><span class="add">+40</span> <span class="del">−10</span></span>
+        </div>
+      </div>
+      <div class="diff">
+        <!-- repeat per row; one of each kind is shown -->
+        <div class="diff-row hunk"><span class="ln"></span><span class="mark"></span><span class="code">@@ -10,4 +10,5 @@ context of the hunk</span></div>
+        <div class="diff-row ctx"><span class="ln">10</span><span class="mark"> </span><span class="code">  an unchanged line, for context</span></div>
+        <div class="diff-row del"><span class="ln">11</span><span class="mark">-</span><span class="code">  the line being removed</span></div>
+        <div class="diff-row add"><span class="ln">11</span><span class="mark">+</span><span class="code">  the line replacing it</span></div>
+        <div class="diff-row ctx"><span class="ln">12</span><span class="mark"> </span><span class="code">  another unchanged line</span></div>
+      </div>
+      <div class="comments">
+        <!-- repeat per comment; .blocking and .nit are the two kinds -->
+        <div class="bubble blocking">
+          <div class="anchor">line 11</div>
+          <p><span class="label">Blocking</span>What is wrong, what
+            happens if it ships, and what to do instead. Name the
+            <code>symbol</code> the comment is about.</p>
+        </div>
+        <div class="bubble nit">
+          <div class="anchor">line 12</div>
+          <p><span class="label">Nit</span>A smaller point the author
+            can take or leave, stated in one sentence.</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- repeat per file that needs no line-level review -->
+    <details class="file-collapsed" id="file-two">
+      <summary>
+        <span class="file-path">path/to/file.ext</span>
+        <span style="display:flex;align-items:center;gap:12px">
+          <span class="risk-tag safe">safe</span>
+          <span class="file-delta"><span class="add">+10</span> <span class="del">−2</span></span>
+        </span>
+      </summary>
+      <div class="body">One or two sentences on what changed and why it
+        needs no closer look — additive only, type-only, test-only.</div>
+    </details>
+  </section>
+
+  <footer class="next-steps">
+    <h2>Suggested next steps</h2>
+    <ul class="checklist">
+      <!-- repeat per step -->
+      <li>
+        <input type="checkbox" id="step1">
+        <label for="step1">One action, phrased so the author can tell
+          when it is done, naming the <code>file</code> it lands in.</label>
+      </li>
+    </ul>
+  </footer>
+
+</div>
+
+<script>
+  // Briefly highlight a file card when reached via the risk-map anchors.
+  document.querySelectorAll('.risk-map a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      var target = document.querySelector(a.getAttribute('href'));
+      if (!target) return;
+      target.classList.add('flash');
+      setTimeout(function () { target.classList.remove('flash'); }, 1400);
+    });
+  });
+</script>
+</body>
+</html>
