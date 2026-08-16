@@ -11,25 +11,40 @@ task comes from here rather than from
 
 ### High
 
-**Check every template in both themes, and drive the interactive ones.**
-Thirteen templates have never been looked at in dark mode: `02`, `03`,
-`04`, `08`, `09`, `12`, `13`, `14`, `15`, `16`, `18`, `19`, `20`. Each
-carries judgment calls no mechanical check can see — a class-per-series
-ramp in `15`, a theme-invariant slide in `09`, a two-hue severity scale
-in `03`, a toggle track moved to `--border-strong` in `19`. The
-interaction is unexercised too: `tests/test_js_syntax.py` proves all
-fourteen inline scripts parse, which is not the same as working.
-Drag-and-drop in `18`, the tab switch in `14`, the flag toggles in `19`,
-the ring demo in `15`, the flowchart panel in `13` and the risk-map
-flash in `03` have not been driven since conversion.
+**Test the token pair that fails, `--accent` on `--surface-sunken`.**
+`tests/test_tokens.py` checks `--accent` against `--bg` and `--surface`
+and passes at 4.51:1 and 4.75:1. It never checks `--surface-sunken`,
+where the same accent reaches only 4.09:1, and `--ok` only 4.13:1 —
+both short of the 4.5:1 small text needs. Two shipped templates land
+there: the slot chips in `20-editor-prompt-tuner.html` and the addition
+count in `17-pr-writeup.html`. Dark theme passes; this is a light-theme
+defect only.
 
-This is the check that catches a colour mapped to the wrong role, and
-`SKILL.md` now hands these templates to readers, so a mistake reaches a
-reader rather than sitting in a branch. Use the `/browse` skill from
-gstack and pin the theme with `data-theme="dark"` on the root element;
-`AGENTS.md` covers the setup and the stale-daemon recovery.
+Adding the pair to `PAIRS` turns a silent near-miss into a red suite,
+which is the point — but it also decides something. Either the deep
+variants get retuned until they clear 4.5:1 on the sunken surface, or
+that pairing is ruled out and the two templates move their accent text
+to `--surface`. Invariant 4 permits the first: `--clay-deep` and
+`--olive-deep` are this project's own, not upstream's palette.
 
 ### Medium
+
+**Raise the four fixed fills that fail AA.** Found by
+`scripts/audit-contrast.js` on 2026-08-16, each identical in both
+themes because each is Tier 1 on Tier 1:
+
+| Where | Pair | Ratio |
+|---|---|---|
+| `16` Post button | `--white` on `--clay` | 3.12 |
+| `12` deleted diff line | `--rust` on `--code-bg` | 3.42 |
+| `02` preview body text | `--gray-500` on the fixed ground | 3.47 |
+| `16` second avatar | `--white` on `--olive` | 3.68 |
+
+`02` already solved this shape once: header note (6) moved the primary
+button to `--clay-deep` for exactly this reason, and recorded that the
+artboard stays theme-invariant because `--clay-deep` is Tier 1 too. The
+same move fixes the `16` button. The other three need a decision rather
+than a substitution, which is why this sits below the token-pair task.
 
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
@@ -95,8 +110,11 @@ backlog above is what remains.
 ## Open questions
 
 **Should the post-`v1.0.0` work be tagged?** `CHANGELOG.md` carries an
-`[Unreleased]` section with one user-facing entry: `scripts/verify.sh`
-gained a sixth check. That is a `v1.1.0` by semver, since it adds a
-capability rather than fixing a defect. Blocked on whether the skill has
-been installed anywhere yet — if nobody has `v1.0.0`, folding the change
-into a re-cut `v1.0.0` is cleaner than shipping two tags nobody used.
+`[Unreleased]` section with two user-facing entries: `scripts/verify.sh`
+gained a sixth check, and `02-exploration-visual-designs.html` no longer
+hides its preview headings in dark theme. That is a `v1.1.0` by semver —
+the added capability outranks the fix. Blocked on whether the skill has
+been installed anywhere yet. If nobody has `v1.0.0`, folding both into a
+re-cut `v1.0.0` is cleaner than shipping two tags nobody used; if
+somebody does have it, the fix alone argues for tagging soon, because it
+is a defect a reader meets on their first dark-mode page.
