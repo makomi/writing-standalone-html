@@ -67,6 +67,38 @@ sed 's/<html lang="en">/<html lang="en" data-theme="dark">/' \
 block supports the attribute directly, so there is no need to rewrite
 the media query.
 
+**Read the computed style, not the screenshot.** A 14px swatch and a
+downscaled screenshot will both lie to you. Two findings from the
+2026-08-16 sweep — inverted delta colours in `09`, light legend chips
+in `13` — were false alarms that `getComputedStyle` disproved in one
+call. Ask the page:
+
+```bash
+~/.claude/bin/browse-once/browse-once \
+  goto "file://$TMPDIR/dark.html" \
+  -- js "getComputedStyle(document.querySelector('.chip')).backgroundColor"
+```
+
+Two traps around that: a colour under a CSS `transition` reads as the
+value it is passing through, so let one settle before believing it
+(`19`'s toggle track takes 160ms); and `browse chain` prints nothing at
+all when a step fails, so a mistyped selector loses the whole run's
+output, not just its own.
+
+`scripts/audit-contrast.js` does the same reading for every text node
+on the page and reports what fails WCAG AA. It found the `02` defect
+that eleven screenshots had not:
+
+```bash
+~/.claude/bin/browse-once/browse-once viewport 1280x900 \
+  -- goto "file://$TMPDIR/dark.html" \
+  -- eval "$PWD/scripts/audit-contrast.js"
+```
+
+An empty array is a pass. It is an audit aid, not a suite member: it
+needs a browser, and a browser must not become a dependency of
+`tests/run-all.sh`.
+
 ## What this environment cannot do
 
 - **No writing to `~/.claude/skills/`.** The skill cannot install
