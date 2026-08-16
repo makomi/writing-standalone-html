@@ -66,11 +66,11 @@ No install step. Python 3 standard library only.
 ./tests/run-all.sh    # every suite, in the one order that is correct
 ```
 
-The order matters and the runner is the only place it is recorded.
-`test_upstream.sh` deletes `.upstream/` as a side effect, so it has to
-run before `test_conversion_rules.py`, which needs a clone, and before
-`test_update.sh`, which asserts detection works without one. Run a suite
-by hand and you own that ordering yourself.
+Any suite can also be run on its own, in any order. `test_upstream.sh`
+moves aside a clone it finds and puts it back, so running the suite
+mid-task no longer destroys the clone that task was converting from.
+Only `test_conversion_rules.py` needs upstream file contents, and
+`run-all.sh` brackets the fetch and clean around it.
 
 The individual pieces:
 
@@ -89,8 +89,16 @@ python3 tests/test_js_syntax.py     # every inline script parses
   rc=$?; ./scripts/upstream.sh clean; exit $rc
 ```
 
-`test_js_syntax.py` skips and says so when `node` is absent. Node is not
-a dependency and must not become one.
+Two suites skip rather than fail when they cannot run, and the runner
+reports a skip as a skip rather than a pass. `test_js_syntax.py` skips
+when `node` is absent — node is not a dependency and must not become
+one. `test_update.sh` skips when the GitHub API is unreachable, because
+an outage reported as a code failure is the exact confusion `update.sh`
+has a distinct exit 2 to prevent.
+
+Watch the API budget: `test_update.sh` spends about ten calls, and
+unauthenticated GitHub allows 60 an hour. Six full runs exhaust it. Set
+`GITHUB_TOKEN` when iterating.
 
 Do not add a dependency, a package manager, or a virtualenv. The repo
 must stay installable by copying a directory. This overrides the

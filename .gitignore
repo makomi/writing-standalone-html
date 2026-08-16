@@ -1,4 +1,5 @@
 .upstream/
+.upstream.testbak/
 __pycache__/
 *.pyc
 *.tmp

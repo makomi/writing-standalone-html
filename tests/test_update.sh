@@ -5,7 +5,37 @@ cd "$(dirname "$0")/.."
 fail=0
 
 backup=$(mktemp)
-trap 'rm -f "$backup"' EXIT
+# Assertion 5 clears .upstream/ to prove detection needs no clone. A
+# session mid-conversion still needs the clone it fetched, so it is
+# moved aside and put back however this exits.
+STASH=".upstream.testbak"
+restore() {
+  rm -f "$backup"
+  if [ -d "$STASH" ]; then
+    rm -rf .upstream
+    mv "$STASH" .upstream
+    echo "note: restored the clone this test borrowed"
+  fi
+}
+trap restore EXIT
+rm -rf "$STASH"
+[ -d .upstream ] && mv .upstream "$STASH"
+
+# Four of the five assertions need the GitHub API. Probe it once and
+# skip the suite when it is unreachable, rather than reporting an
+# outage as a code failure -- which is the exact confusion update.sh's
+# distinct exit 2 exists to prevent.
+#
+# The budget is real: this suite spends about ten API calls, and
+# unauthenticated GitHub allows 60 an hour. Set GITHUB_TOKEN to raise
+# it if the suite runs often.
+probe=$(./scripts/update.sh 2>&1)
+if [ $? -eq 2 ]; then
+  echo "SKIP: the GitHub API is unreachable, so drift detection was"
+  echo "      not exercised. update.sh said:"
+  printf '      %s\n' "$probe"
+  exit 0
+fi
 
 # 1. A clean tree must stay clean after a run.
 before=$(git status --porcelain | sort)

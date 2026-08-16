@@ -1,8 +1,27 @@
 #!/usr/bin/env bash
 # upstream.sh must be idempotent, and .upstream/ must never be tracked.
+#
+# The assertions have to run against the real .upstream/ path, because
+# one of them is that git ignores exactly that path. So a clone the
+# session is already using is moved aside first and put back afterwards,
+# however this exits. Without that, running the suite mid-task deletes
+# the clone the task was converting from.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fail=0
+
+STASH=".upstream.testbak"
+restore() {
+  rm -rf .upstream
+  if [ -d "$STASH" ]; then
+    mv "$STASH" .upstream
+    echo "note: restored the clone this test borrowed"
+  fi
+}
+trap restore EXIT
+
+rm -rf "$STASH"
+[ -d .upstream ] && mv .upstream "$STASH"
 
 ./scripts/upstream.sh clean >/dev/null 2>&1
 
