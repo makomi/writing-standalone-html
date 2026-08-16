@@ -18,12 +18,12 @@ passes.
 |---|---|
 | `references/design-system.css` | Built — two-tier tokens, light and dark, with an explicit theme switch |
 | `references/conversion-rules.md` | Built — the seven-step procedure |
-| `scripts/verify.sh` | Built — five mechanical checks |
+| `scripts/verify.sh` | Built — six mechanical checks |
 | `scripts/upstream.sh` | Built — borrow and return the clone |
 | `scripts/stamp.sh` | Built — re-embed the token block |
 | `scripts/update.sh` | Built — read-only drift check over the GitHub API |
 | `templates/MANIFEST.json` | Built — 20 records, pinned at `58c305b` |
-| `lib/`, `tests/` | Built — 5 test suites, all green |
+| `lib/`, `tests/` | Built — 6 test suites, all green via `tests/run-all.sh` |
 | `templates/` | 20 of 20 converted |
 | `SKILL.md` | Built — the trigger surface and the genre selection table |
 
@@ -147,9 +147,11 @@ copy of upstream that can go stale without anyone noticing.
 
 Checks every template: it parses, it holds no external reference, its
 token block matches `references/design-system.css` exactly, it carries
-no raw colour outside that block, and no upstream brand name survives.
-A sixth check stays manual — that the page reads correctly in both
-light and dark themes.
+no raw colour outside that block, no script writes a raw colour into
+CSS, and no upstream brand name survives.
+
+One check stays manual — that the page reads correctly in both light
+and dark themes. No script can make it.
 
 ## License
 

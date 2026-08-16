@@ -35,7 +35,12 @@ Breaking any of these breaks the point of the project.
    of truth and fails on a mismatch.
 3. **No raw colour outside the token block.** Every color resolves
    through `var()` — hex, `rgb()`, `hsl()` and named colours alike.
-   `scripts/verify.sh` enforces this.
+   `scripts/verify.sh` enforces this, in a `<style>` block, in a
+   colour-bearing attribute, and in a string a script writes into CSS
+   through `style`, `cssText`, `setProperty` or `setAttribute`. A colour
+   set from JavaScript pins itself to whichever theme was current, and
+   it fails only after a reader interacts. Put the colour in a class and
+   let the script toggle the class.
 4. **Tier 1 light values are upstream's palette.** Never retune them.
    Contrast problems get fixed in the variants this project added —
    `--clay-deep`, `--olive-deep` for light, `--ink`, `--ink-raised`,

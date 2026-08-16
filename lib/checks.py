@@ -79,6 +79,24 @@ COLOR_ATTR = re.compile(
     re.I | re.X,
 )
 COMMENT = re.compile(r"<!--.*?-->", re.S)
+
+# Script routes that put a string into CSS. A colour literal is only a
+# defect when it reaches the cascade, so the check triggers on the sink
+# rather than on the string: `el.dataset.tint = "#d97757"` is data, and
+# `el.style.color = "#d97757"` pins a colour past the theme switch.
+STYLE_SINK = re.compile(
+    r"""\.setProperty\s*\(
+      | \.setAttribute\s*\(\s*["']style["']
+      | \.style\s*\.\s*[A-Za-z0-9_$]+\s*=(?!=)
+      | \.style\s*\[[^\]]*\]\s*=(?!=)
+      | \.cssText\s*=(?!=)
+      | \.style\s*=(?!=)
+      | <style\b""",
+    re.I | re.X,
+)
+# How far back from a string literal to look for its sink. Long enough
+# to clear `.setProperty("--surface-sunken", ` and its whitespace.
+SINK_WINDOW = 160
 VOID = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "source", "track", "wbr",
@@ -213,6 +231,91 @@ def _value_words(chunk):
             yield offset + m.start(), m.group(0)
 
 
+def _js_literals(src):
+    """Yield (start, body) for every string literal in a script.
+
+    A hand-rolled scan rather than a regex, because comments and
+    strings nest the wrong way for one: blanking `//` first would eat
+    the tail of `"https://example.com"`, and finding strings first
+    would miss a colour commented out.
+
+    A regex literal containing a quote -- `/["']/` -- is read as a
+    string here. That costs a possible false positive inside a style
+    assignment, which is the safe direction to be wrong in.
+    """
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        if c == "/" and i + 1 < n and src[i + 1] == "/":
+            j = src.find("\n", i)
+            i = n if j < 0 else j
+        elif c == "/" and i + 1 < n and src[i + 1] == "*":
+            j = src.find("*/", i + 2)
+            i = n if j < 0 else j + 2
+        elif c in "\"'`":
+            j = i + 1
+            while j < n:
+                if src[j] == "\\":
+                    j += 2
+                    continue
+                if src[j] == c:
+                    break
+                j += 1
+            yield i + 1, src[i + 1:j]
+            i = j + 1
+        else:
+            i += 1
+
+
+def check_no_colour_in_scripts(text):
+    """A colour written into CSS from JavaScript is still a raw colour.
+
+    The other colour check reads <style> blocks and colour-bearing
+    attributes, which leaves one route open: a string assigned to
+    `style`, `cssText` or `setProperty`. That route pins a colour to
+    whichever theme was current, and it fails only after a reader
+    interacts, which is the worst place for it to fail.
+
+    Only strings reaching a CSS sink are scanned. A colour in a data
+    attribute, a label or a chart legend is not a defect and is not
+    reported.
+    """
+    def blank(match):
+        return re.sub(r"[^\n]", " ", match.group(0))
+
+    stripped = COMMENT.sub(blank, TOKEN_BLOCK.sub(blank, text))
+
+    def at(pos):
+        return stripped.count("\n", 0, pos) + 1
+
+    out = []
+    for block in re.finditer(r"<script\b[^>]*>(.*?)</script>",
+                             stripped, re.S | re.I):
+        base, body = block.start(1), block.group(1)
+        for start, literal in _js_literals(body):
+            window = body[max(0, start - SINK_WINDOW):start]
+            sink = None
+            for m in STYLE_SINK.finditer(window):
+                sink = m
+            # A `;` `{` or `}` after the sink means the statement that
+            # used it has already ended, so this string is unrelated.
+            if sink is None or re.search(r"[;{}]", window[sink.end():]):
+                continue
+            where = at(base + start)
+            for m in HEX.finditer(literal):
+                out.append(f"raw hex {m.group(0)} in a style assignment "
+                           f"at line {where}")
+            for m in COLOR_FN.finditer(literal):
+                name = m.group(0).rstrip("( \t")
+                out.append(f"raw colour {name}(...) in a style assignment "
+                           f"at line {where}")
+            for _, word in _value_words(literal):
+                if word.lower() in NAMED_COLORS:
+                    out.append(f"named colour {word} in a style assignment "
+                               f"at line {where}")
+    return sorted(set(out))
+
+
 def check_token_block(text):
     """The embedded block must match the source of truth exactly.
 
@@ -258,6 +361,7 @@ CHECKS = [
     ("external refs", check_no_external_refs),
     ("token block", check_token_block),
     ("colour", check_no_raw_hex_outside_tokens),
+    ("script colour", check_no_colour_in_scripts),
     ("fiction", check_no_upstream_fiction),
 ]
 

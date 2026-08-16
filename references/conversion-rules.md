@@ -228,12 +228,12 @@ the single retained instance from step 4.
 
     ./scripts/verify.sh templates/<NN-name>.html
 
-Five checks must pass: the file parses, it holds no external
-reference, its token block matches `references/design-system.css`
-exactly, no raw colour survives outside that block, and no upstream
-brand name survives anywhere. Then open the file in a browser and
-confirm it reads correctly in both light and dark — the sixth check,
-which no script can make.
+Six checks must pass: the file parses, it holds no external reference,
+its token block matches `references/design-system.css` exactly, no raw
+colour survives outside that block, no script writes a raw colour into
+CSS, and no upstream brand name survives anywhere. Then open the file in
+a browser and confirm it reads correctly in both light and dark — the
+seventh check, which no script can make.
 
 Note what the colour check does and does not scan: it looks inside
 `<style>` blocks and color-bearing attributes only, and it skips HTML
@@ -241,6 +241,14 @@ comments. Element text is excluded on purpose, because `#4871` in
 `11-status-report.html` is a pull-request number, not a color, and
 comments are excluded because the provenance header quotes the colours
 it replaced.
+
+The script check is narrower still. It triggers on the sink, not on the
+string: a colour only fails when it reaches CSS through `style`,
+`cssText`, `setProperty` or `setAttribute("style", ...)`. A colour in a
+data attribute, a label or a chart legend is not a defect. When the
+check fires, do not reach for a token inside the string — put the colour
+in a CSS class and let the script toggle the class. `03` and `06` are
+the worked examples.
 
 A token-block failure is repaired by `./scripts/stamp.sh <file>`, never
 by editing the block in the template.

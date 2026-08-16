@@ -10,6 +10,14 @@ Internal work — tests, refactors, tooling fixes, corrections to our own
 measurements — lives in commit bodies. See the changelog rules in
 `AGENTS.md`.
 
+## [Unreleased]
+
+### Changed
+
+- `scripts/verify.sh` also fails a template whose script writes a raw
+  colour into CSS through `style`, `cssText`, `setProperty` or
+  `setAttribute`. A colour set that way pins itself to one theme.
+
 ## [1.0.0] - 2026-08-16
 
 ### Added
