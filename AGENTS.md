@@ -58,18 +58,34 @@ Breaking any of these breaks the point of the project.
 No install step. Python 3 standard library only.
 
 ```bash
+./tests/run-all.sh    # every suite, in the one order that is correct
+```
+
+The order matters and the runner is the only place it is recorded.
+`test_upstream.sh` deletes `.upstream/` as a side effect, so it has to
+run before `test_conversion_rules.py`, which needs a clone, and before
+`test_update.sh`, which asserts detection works without one. Run a suite
+by hand and you own that ordering yourself.
+
+The individual pieces:
+
+```bash
 ./scripts/verify.sh                      # all templates
 ./scripts/verify.sh templates/09-*.html  # one file
 ./scripts/stamp.sh                       # re-embed the token block
-./tests/test_verify.sh           # the checker's own tests
-./tests/test_upstream.sh         # borrow and return the clone
-python3 tests/test_tokens.py     # token roles and WCAG contrast
-./tests/test_update.sh           # drift classification and exit codes
+./tests/test_verify.sh              # the checker's own tests
+./tests/test_upstream.sh            # borrow and return the clone
+python3 tests/test_tokens.py        # token roles and WCAG contrast
+python3 tests/test_js_syntax.py     # every inline script parses
+./tests/test_update.sh              # drift classification and exit codes
 
 # This one reads upstream sources, so bracket it:
 ./scripts/upstream.sh fetch && python3 tests/test_conversion_rules.py; \
   rc=$?; ./scripts/upstream.sh clean; exit $rc
 ```
+
+`test_js_syntax.py` skips and says so when `node` is absent. Node is not
+a dependency and must not become one.
 
 Do not add a dependency, a package manager, or a virtualenv. The repo
 must stay installable by copying a directory. This overrides the
