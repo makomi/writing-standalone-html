@@ -85,6 +85,15 @@ value it is passing through, so let one settle before believing it
 all when a step fails, so a mistyped selector loses the whole run's
 output, not just its own.
 
+A page taller than the viewport needs more than one shot: a full-page
+`screenshot` is capped at 2000px and scaled down, which costs the
+legibility the check depends on. Scroll in viewport-sized steps
+instead. `09-slide-deck.html` is the exception — it is a scroll-snap
+deck and `window.scrollTo` does not move it. Drive it with
+`press ArrowRight`, or jump with
+`document.querySelectorAll('.slide')[n].scrollIntoView({behavior:'instant'})`
+when you want the shot without waiting out the smooth scroll.
+
 `scripts/audit-contrast.js` does the same reading for every text node
 on the page and reports what fails WCAG AA. It found the `02` defect
 that eleven screenshots had not:
