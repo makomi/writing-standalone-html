@@ -29,8 +29,8 @@ passes.
 
 One check is open, and no script can make it: thirteen templates are
 waiting on a look in both themes, and the interactive files have not
-been driven in a browser since conversion. The plan's status section
-names them.
+been driven in a browser since conversion. `TASKS.md` names them and
+holds everything else still open.
 
 ## How it works
 

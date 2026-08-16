@@ -10,7 +10,7 @@
 
 **Spec:** `docs/specs/2026-08-14-writing-standalone-html-design.md`
 
-**Decisions:** `docs/decisions/0001` through `0005`
+**Decisions:** `docs/decisions/0001` through `0007`
 
 ## Status — 2026-08-16
 

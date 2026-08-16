@@ -12,12 +12,33 @@ tooling that keeps them synchronized with upstream
 Read before changing anything:
 
 1. `docs/specs/2026-08-14-writing-standalone-html-design.md` — the design
-2. `docs/decisions/` — six decision records with the alternatives rejected
+2. `docs/decisions/` — seven decision records with the alternatives rejected
 3. `docs/plans/2026-08-14-writing-standalone-html.md` — the ten-task build
+4. `TASKS.md` — the open backlog, and where the next task comes from
 
 If a change contradicts a decision record, that is a new decision. Write
-`docs/decisions/0007 - ....md`, mark the old record superseded, and say
+`docs/decisions/0008 - ....md`, mark the old record superseded, and say
 so in the commit body. Do not silently reverse one.
+
+The build plan is finished and `v1.0.0` is tagged, so "the next task"
+means the top of `TASKS.md`, not the next unchecked plan step. The plan
+keeps its checkboxes as a record of what was built and what was skipped.
+
+## What this environment cannot do
+
+Two checks cannot be made from an agent sandbox. Neither is a defect to
+fix in code, and both cost real time to rediscover.
+
+- **No browser.** Headless chromium is denied `socket()` and dumps core
+  before rendering. The theme and interaction checks need a person or a
+  session with real browser access.
+- **No writing to `~/.claude/skills/`.** The skill cannot install
+  itself; decision 0005 records why. Print the command and let a person
+  run it.
+
+A third limit is a budget rather than a wall: the GitHub API allows only
+60 unauthenticated calls an hour. See "Running the checks" for what that
+costs and how to raise it.
 
 ## Invariants
 
@@ -124,7 +145,41 @@ Two rules people get wrong:
 
 After converting, run `./scripts/verify.sh <file>` and open the result in a
 browser in both themes. The theme check is not automatable and is the
-one that catches a color mapped to the wrong role.
+one that catches a color mapped to the wrong role. Set
+`data-theme="dark"` or `data-theme="light"` on the root element to pin a
+theme — the token block supports it directly, so there is no need to
+rewrite the media query.
+
+## Traps
+
+Each of these cost time at least once. They are settled; do not reopen
+them.
+
+- **Never edit a token block inside a template.** Edit
+  `references/design-system.css` and run `./scripts/stamp.sh`. The
+  checker fails the file if you forget.
+- **`./scripts/upstream.sh clean` after anything that fetches.** The
+  clone is git-ignored, so a stale one is invisible in `git status`.
+- **The colour check scans `<style>` blocks and colour attributes only,
+  and skips HTML comments.** Both exclusions are deliberate: `#4871` in
+  `11-status-report.html` is a pull-request number, and the provenance
+  headers quote the colours they replaced. Commit `349531c` removed a
+  regression that widened the scan.
+- **The script-colour check triggers on the sink, not the string.** A
+  colour fails when it reaches CSS through `style`, `cssText`,
+  `setProperty` or `setAttribute("style", ...)`. A colour in a data
+  attribute or a label is not a defect. When it fires, put the colour in
+  a CSS class and toggle the class — never a `var()` inside the string.
+  `03` and `06` are the worked examples.
+- **`data-theme` and `--warn` are settled.** `--warn` resolves to the
+  same clay as `--accent` on purpose. Do not add an amber to separate
+  them.
+- **A three-step severity scale has two hues, not three.** `03` is the
+  worked example: safe takes `--ok`, the middle step takes the neutral
+  band, flagged takes `--accent`.
+- **There is no target line count.** A template is as long as its genre
+  CSS and interaction logic make it. Spec section 4.4 records the
+  measurement and withdraws the old projection.
 
 ## Commits
 

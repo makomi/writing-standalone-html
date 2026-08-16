@@ -5,9 +5,6 @@ __pycache__/
 *.tmp
 .DS_Store
 
-# Session-local, never committed
-HANDOFF.md
-docs/HANDOFF.md
-TASKS.md
+# Local tooling, never committed
 .gstack/
 .claude/
