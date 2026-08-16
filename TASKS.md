@@ -27,6 +27,11 @@ that pairing is ruled out and the two templates move their accent text
 to `--surface`. Invariant 4 permits the first: `--clay-deep` and
 `--olive-deep` are this project's own, not upstream's palette.
 
+The scope is exactly those two. Every other role was computed against
+`--surface-sunken` on 2026-08-16 and clears: `--text-muted` at 9.38:1
+and `--danger` at 4.64:1 in light, and all four in dark, the tightest
+being `--danger` at 5.38:1.
+
 ### Medium
 
 **Raise the four fixed fills that fail AA.** Found by
