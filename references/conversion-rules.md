@@ -231,9 +231,13 @@ the single retained instance from step 4.
 Six checks must pass: the file parses, it holds no external reference,
 its token block matches `references/design-system.css` exactly, no raw
 colour survives outside that block, no script writes a raw colour into
-CSS, and no upstream brand name survives anywhere. Then open the file in
-a browser and confirm it reads correctly in both light and dark — the
-seventh check, which no script can make.
+CSS, and no upstream brand name survives anywhere.
+
+Two checks are left, and both need the file rendered. Run
+`scripts/audit-contrast.js` against it in each theme — an empty array is
+the only pass — and then look at it in each theme yourself. The audit
+catches a colour mapped to a role that inverts; the look catches what a
+ratio cannot say.
 
 Note what the colour check does and does not scan: it looks inside
 `<style>` blocks and color-bearing attributes only, and it skips HTML

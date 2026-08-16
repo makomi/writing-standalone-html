@@ -469,10 +469,19 @@ cannot reach a commit.
    define them. The check is therefore scoped: extract the token block,
    scan everything else, expect zero matches.
 
-A fourth check is manual: the template renders legibly in both light
-and dark theme. This cannot be automated without a rendering harness and
-a legibility judgment, so it applies only to templates that changed in
-the current ingest run — not to the full set on every check.
+A fourth check needs the template rendered: it reads legibly in both
+light and dark theme. It applies to templates that changed in the
+current ingest run, not to the full set on every check.
+
+**Amended 2026-08-16.** This section called the fourth check
+unautomatable. Half of it is: `scripts/audit-contrast.js` runs in the
+rendering harness the environment turned out to have and reports every
+text node below WCAG AA against its own ground. It found a heading at
+1.06:1 in `02-exploration-visual-designs.html` that a full-page
+screenshot did not show, because near-black on near-black reads as
+absent rather than as wrong. What stays unautomatable is the legibility
+judgment the ratio cannot make — whether a colour carries the meaning
+its role claims.
 
 ## 8. Constraints and open risks
 

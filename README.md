@@ -22,15 +22,15 @@ passes.
 | `scripts/upstream.sh` | Built — borrow and return the clone |
 | `scripts/stamp.sh` | Built — re-embed the token block |
 | `scripts/update.sh` | Built — read-only drift check over the GitHub API |
+| `scripts/audit-contrast.js` | Built — WCAG audit of a rendered page, run in a browser |
 | `templates/MANIFEST.json` | Built — 20 records, pinned at `58c305b` |
 | `lib/`, `tests/` | Built — 6 test suites, all green via `tests/run-all.sh` |
 | `templates/` | 20 of 20 converted |
 | `SKILL.md` | Built — the trigger surface and the genre selection table |
 
-One check is open, and no script can make it: thirteen templates are
-waiting on a look in both themes, and the interactive files have not
-been driven in a browser since conversion. `TASKS.md` names them and
-holds everything else still open.
+All twenty templates have been rendered in both themes and every
+interactive one driven in a browser. `TASKS.md` holds what is still
+open, including two contrast shortfalls the review measured.
 
 ## How it works
 
@@ -150,8 +150,11 @@ token block matches `references/design-system.css` exactly, it carries
 no raw colour outside that block, no script writes a raw colour into
 CSS, and no upstream brand name survives.
 
-One check stays manual — that the page reads correctly in both light
-and dark themes. No script can make it.
+Two checks need a rendered page, so they run in a browser rather than
+in `verify.sh`. `scripts/audit-contrast.js` reports every text node
+below WCAG AA against the ground it is painted on; run it once per
+theme. The second is a look: whether the page reads correctly in light
+and in dark.
 
 ## License
 

@@ -211,12 +211,11 @@ Two rules people get wrong:
   dependency warning needs a prerequisite to point at. Use judgment and
   record it in the template's header notes.
 
-After converting, run `./scripts/verify.sh <file>` and open the result in a
-browser in both themes. The theme check is not automatable and is the
-one that catches a color mapped to the wrong role. Set
-`data-theme="dark"` or `data-theme="light"` on the root element to pin a
-theme — the token block supports it directly, so there is no need to
-rewrite the media query.
+After converting, run `./scripts/verify.sh <file>`, then render the file
+in both themes and run `scripts/audit-contrast.js` against each. See
+"Browsing and the theme check" for both commands. The audit catches a
+colour mapped to a role that inverts; the eye catches the rest, which is
+why both still happen.
 
 ## Traps
 
