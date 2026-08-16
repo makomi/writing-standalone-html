@@ -81,6 +81,23 @@ writes to `~/.claude/skills/` are denied.
 
 ### Low
 
+**Say why `15` can report that nothing moved.** "remove a node" deletes
+a node at random, so the ring sometimes reads "0 (0%) moved on last
+change" — the opposite of the point the demo exists to make, which is
+that a ring moves few keys rather than none. The logic is upstream's and
+invariant 6 keeps it, so the fix is a sentence in the template's header
+notes saying the pick is random and the readout is honest about that
+draw. Trivial effort. Rewriting the pick to prefer a node that owns keys
+would be a code change to retained interaction, which needs a decision
+record first.
+
+**Open `06` and `07` with a judgment-call count.** The other eighteen
+templates start their header notes with "N judgment calls" and then
+number them; `06` lists six and `07` lists five with no opening line.
+Nothing breaks and no reader is misled, but a convention kept in
+eighteen places and dropped in two stops being a convention. Trivial
+effort: one line each, counted from what is already there.
+
 **Route the conversion-rules suite through `run()` in `run-all.sh`.**
 That one block is written out longhand instead of using the runner's
 `run()` helper, so it duplicates the pass and fail logic and cannot
