@@ -12,7 +12,7 @@ reference. Open it in a browser and it works.
 ## Status
 
 **All twenty templates converted; the skill has no trigger file yet.**
-Tasks 1 to 7 of the ten-task plan are done and every test passes.
+Tasks 1 to 8 of the ten-task plan are done and every test passes.
 
 | Path | State |
 |---|---|
@@ -21,16 +21,18 @@ Tasks 1 to 7 of the ten-task plan are done and every test passes.
 | `scripts/verify.sh` | Built — five mechanical checks |
 | `scripts/upstream.sh` | Built — borrow and return the clone |
 | `scripts/stamp.sh` | Built — re-embed the token block |
-| `lib/`, `tests/` | Built — 4 test suites, all green |
+| `scripts/update.sh` | Built — read-only drift check over the GitHub API |
+| `templates/MANIFEST.json` | Built — 20 records, pinned at `58c305b` |
+| `lib/`, `tests/` | Built — 5 test suites, all green |
 | `templates/` | 20 of 20 converted |
-| `scripts/update.sh`, `SKILL.md` | Not written yet |
+| `SKILL.md` | Not written yet |
 
 The skill still does nothing useful, because `SKILL.md` — the file
 Claude Code reads to trigger it — does not exist.
 
-Next is Task 8 in `docs/plans/2026-08-14-writing-standalone-html.md`:
-the manifest and the update checker, then `SKILL.md` and the release.
-Run the suite first; it should be green before anything is added.
+Next is Task 9 in `docs/plans/2026-08-14-writing-standalone-html.md`:
+`SKILL.md`, then the release. Run the suite first; it should be green
+before anything is added.
 
 Thirteen templates are still waiting on their by-eye check in both
 themes, and the interactive files have not been driven in a browser

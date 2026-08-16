@@ -14,10 +14,12 @@
 
 ## Status — 2026-08-16
 
-Tasks 1 to 7 are done: the harness, the token file, the rules and all
-twenty templates. `./scripts/verify.sh` passes twenty files on five
-checks. **Task 8 is next** — the manifest and the update checker — then
-Task 9 (`SKILL.md`) and Task 10 (changelog and tag).
+Tasks 1 to 8 are done: the harness, the token file, the rules, all
+twenty templates, and the manifest with the drift checker.
+`./scripts/verify.sh` passes twenty files on five checks, and
+`./scripts/update.sh` reads all twenty as unchanged at the pin.
+**Task 9 is next** — `SKILL.md`, which is what makes the skill trigger
+at all — then Task 10 (changelog and tag).
 
 Two things are outstanding inside the finished tasks, and both are
 unchecked steps above rather than hidden:
@@ -1372,9 +1374,17 @@ page chrome around them uses Tier 2.
 
 Detection reads blob SHAs from the GitHub API rather than a clone (decision 0006). This was verified before the design was settled: `11-status-report.html` returns `764665143d3731ccb5e8978898bf7d7a5e46cc5f` from both the API and `git rev-parse`, so the comparison is unchanged.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_update.sh`:
+
+> **Amended 2026-08-16, during implementation.** Two changes to the
+> listing below. The manifest backup uses `mktemp` rather than
+> `$TMPDIR/manifest.bak`, because `set -u` aborts the whole suite when
+> `TMPDIR` is unset, which it is on most Linux shells. And assertion 5
+> requires exit 0 or 1 rather than "not 2": as written it also passed
+> when `update.sh` did not exist at all and exited 127, so it could not
+> fail for the reason it was testing.
 
 ```bash
 #!/usr/bin/env bash
@@ -1445,7 +1455,7 @@ fi
 exit $fail
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 chmod +x tests/test_update.sh
@@ -1454,7 +1464,7 @@ chmod +x tests/test_update.sh
 
 Expected: fails, `scripts/update.sh` does not exist.
 
-- [ ] **Step 3: Write `lib/manifest.py`**
+- [x] **Step 3: Write `lib/manifest.py`**
 
 ```python
 """Read, compare and stamp templates/MANIFEST.json."""
@@ -1499,7 +1509,7 @@ def compare(manifest, upstream_shas):
     }
 ```
 
-- [ ] **Step 4: Write `lib/github.py`**
+- [x] **Step 4: Write `lib/github.py`**
 
 Detection talks to the API, not to git. Standard library only — `urllib`, no `requests`.
 
@@ -1574,9 +1584,18 @@ def tree_blobs(commit):
 
 The `truncated` guard matters: the API pages large trees, and a silently truncated response would read as "these files were removed upstream". Upstream currently returns 20 files untruncated.
 
-- [ ] **Step 5: Generate `templates/MANIFEST.json`**
+- [x] **Step 5: Generate `templates/MANIFEST.json`**
 
 The manifest is written once here, from the clone that is already present after Task 7. Afterwards only ingest mode writes it.
+
+> **Amended 2026-08-16, during implementation.** The generator below
+> stamps `converted_at` with today's date. That is wrong for nineteen of
+> the twenty files: they were converted on 2026-08-15 and their
+> provenance headers say so, which would leave the manifest and the
+> template disagreeing about the same fact. As run, `converted_at`,
+> `upstream_source` and `upstream_blob_sha` are read from each
+> template's own header, and the generator aborts if a header's commit
+> or blob SHA disagrees with the clone. All twenty agreed.
 
 ```bash
 ./scripts/upstream.sh fetch
@@ -1619,7 +1638,7 @@ PY
 
 Expected: `wrote 20 entries at 58c305b`.
 
-- [ ] **Step 6: Write `scripts/update.sh`**
+- [x] **Step 6: Write `scripts/update.sh`**
 
 ```bash
 #!/usr/bin/env bash
@@ -1676,7 +1695,7 @@ PY
 
 The empty-response guard is deliberate. An API change that returns a tree without the numbered files would otherwise classify all 20 as "removed upstream" — a confident, catastrophic, wrong answer. Refusing to report is the correct response to an implausible result.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 ```bash
 chmod +x scripts/update.sh
@@ -1685,7 +1704,7 @@ chmod +x scripts/update.sh
 
 Expected: five `ok:` lines, exit 0, and no `.upstream/` left behind.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add scripts/update.sh lib/manifest.py lib/github.py templates/MANIFEST.json tests/test_update.sh

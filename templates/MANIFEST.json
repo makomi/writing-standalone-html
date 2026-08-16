@@ -1,0 +1,147 @@
+{
+  "upstream_repo": "anthropics/html-effectiveness",
+  "upstream_commit": "58c305be97f47b26b678f2c07dec01d4242268ec",
+  "checked_at": "2026-08-16T07:50:31Z",
+  "files": [
+    {
+      "template": "01-exploration-code-approaches.html",
+      "upstream_source": "01-exploration-code-approaches.html",
+      "upstream_blob_sha": "7334ca4147b1b038a764312b6c77ac02b8b873b0",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 12
+    },
+    {
+      "template": "02-exploration-visual-designs.html",
+      "upstream_source": "02-exploration-visual-designs.html",
+      "upstream_blob_sha": "fd1a1fa8bc935a6f3d77aa028ec39666a0f80752",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 14
+    },
+    {
+      "template": "03-code-review-pr.html",
+      "upstream_source": "03-code-review-pr.html",
+      "upstream_blob_sha": "c1a2175cd6a67638f98ec9796b2ac02ebf9efebe",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 24
+    },
+    {
+      "template": "04-code-understanding.html",
+      "upstream_source": "04-code-understanding.html",
+      "upstream_blob_sha": "495513148f5a676099b725dd06ed110ff420a0b8",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 17
+    },
+    {
+      "template": "05-design-system.html",
+      "upstream_source": "05-design-system.html",
+      "upstream_blob_sha": "476af7cdc338be71a223b26418f963f045dbc728",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 40
+    },
+    {
+      "template": "06-component-variants.html",
+      "upstream_source": "06-component-variants.html",
+      "upstream_blob_sha": "c97b71c3ac7c7919d883eb181eaf25c26c2600e4",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 10
+    },
+    {
+      "template": "07-prototype-animation.html",
+      "upstream_source": "07-prototype-animation.html",
+      "upstream_blob_sha": "f5131d8d2b3af513e66f38642a31054e437ddf54",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 14
+    },
+    {
+      "template": "08-prototype-interaction.html",
+      "upstream_source": "08-prototype-interaction.html",
+      "upstream_blob_sha": "0ce6ea47c95e6b5702de290f8583a01d504931dc",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 10
+    },
+    {
+      "template": "09-slide-deck.html",
+      "upstream_source": "09-slide-deck.html",
+      "upstream_blob_sha": "c8df95c4d5950f4acfdcf80514f87cc0ec1961a7",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 19
+    },
+    {
+      "template": "10-svg-illustrations.html",
+      "upstream_source": "10-svg-illustrations.html",
+      "upstream_blob_sha": "70f57a05317c11597b3100979fbde206c971d70d",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 114
+    },
+    {
+      "template": "11-status-report.html",
+      "upstream_source": "11-status-report.html",
+      "upstream_blob_sha": "764665143d3731ccb5e8978898bf7d7a5e46cc5f",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 48
+    },
+    {
+      "template": "12-incident-report.html",
+      "upstream_source": "12-incident-report.html",
+      "upstream_blob_sha": "85af33266003c4df74f368790b7b922ed0707313",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 14
+    },
+    {
+      "template": "13-flowchart-diagram.html",
+      "upstream_source": "13-flowchart-diagram.html",
+      "upstream_blob_sha": "85abfd474921f1d01babe9c84b4e784eb5d569eb",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 20
+    },
+    {
+      "template": "14-research-feature-explainer.html",
+      "upstream_source": "14-research-feature-explainer.html",
+      "upstream_blob_sha": "6cb0e89d39d173b6fd2fc8c9f0fd493a987f870a",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 13
+    },
+    {
+      "template": "15-research-concept-explainer.html",
+      "upstream_source": "15-research-concept-explainer.html",
+      "upstream_blob_sha": "85e5193f9f276431ca4140471d1f2af43299d249",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 22
+    },
+    {
+      "template": "16-implementation-plan.html",
+      "upstream_source": "16-implementation-plan.html",
+      "upstream_blob_sha": "cd7302d326da86bb1a772cd48a8a4053215c1ff0",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 47
+    },
+    {
+      "template": "17-pr-writeup.html",
+      "upstream_source": "17-pr-writeup.html",
+      "upstream_blob_sha": "d13339727964bb48a7eed36547624a0371c8c059",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 19
+    },
+    {
+      "template": "18-editor-triage-board.html",
+      "upstream_source": "18-editor-triage-board.html",
+      "upstream_blob_sha": "bbaa55b58a7ea18f6a23036319afece7112b8d01",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 21
+    },
+    {
+      "template": "19-editor-feature-flags.html",
+      "upstream_source": "19-editor-feature-flags.html",
+      "upstream_blob_sha": "8276e78e2cfb07f90fdb6877388296966ae4ee7f",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 18
+    },
+    {
+      "template": "20-editor-prompt-tuner.html",
+      "upstream_source": "20-editor-prompt-tuner.html",
+      "upstream_blob_sha": "cd0b409778edf59036ab7f44fef3408a10aae33d",
+      "converted_at": "2026-08-15",
+      "raw_hex_count_at_conversion": 11
+    }
+  ]
+}
