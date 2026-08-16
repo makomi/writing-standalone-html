@@ -24,21 +24,57 @@ The build plan is finished and `v1.0.0` is tagged, so "the next task"
 means the top of `TASKS.md`, not the next unchecked plan step. The plan
 keeps its checkboxes as a record of what was built and what was skipped.
 
+## Browsing and the theme check
+
+The theme and interaction checks need a rendered page. Drive the browser
+with `browse-once`, which runs a whole gstack session inside one shell
+call:
+
+```bash
+~/.claude/bin/browse-once/browse-once \
+  goto "file://$PWD/templates/11-status-report.html" \
+  -- screenshot "$TMPDIR/shot.png"
+```
+
+Commands chain with a literal `--`, so one call can navigate, click and
+screenshot. `browse-once --help`-style usage is in its own README next
+to the binary.
+
+Three rules, each of which costs a hang or a crash to learn:
+
+- **Never call `browse` directly, and never the
+  `mcp__claude-in-chrome__*` tools.** gstack's `browse` expects a
+  long-lived daemon, and the daemon cannot survive across Bash calls
+  here: every call gets its own PID and network namespace, so the next
+  call reads the state file, tries a dead port and blocks.
+- **Never launch chromium yourself.** A bare `chromium --headless` is
+  denied `socket()` and dumps core before rendering.
+- **Use `$TMPDIR`, not `/tmp`.** Writes to `/tmp` are refused.
+
+If the gstack skills are missing, build them:
+`cd .claude/skills/gstack && ./setup`.
+
+To check a theme, copy the template and set the attribute on the root
+element — templates ship without one, so they follow the reader's system
+setting and a headless browser gives you light:
+
+```bash
+sed 's/<html lang="en">/<html lang="en" data-theme="dark">/' \
+  templates/11-status-report.html > "$TMPDIR/dark.html"
+```
+
+`data-theme="dark"` and `data-theme="light"` both work, and the token
+block supports the attribute directly, so there is no need to rewrite
+the media query.
+
 ## What this environment cannot do
 
-Two checks cannot be made from an agent sandbox. Neither is a defect to
-fix in code, and both cost real time to rediscover.
-
-- **No browser.** Headless chromium is denied `socket()` and dumps core
-  before rendering. The theme and interaction checks need a person or a
-  session with real browser access.
 - **No writing to `~/.claude/skills/`.** The skill cannot install
   itself; decision 0005 records why. Print the command and let a person
   run it.
-
-A third limit is a budget rather than a wall: the GitHub API allows only
-60 unauthenticated calls an hour. See "Running the checks" for what that
-costs and how to raise it.
+- **Only 60 unauthenticated GitHub API calls an hour.** A budget rather
+  than a wall. See "Running the checks" for what that costs and how to
+  raise it.
 
 ## Invariants
 

@@ -25,11 +25,31 @@ flash in `03` have not been driven since conversion.
 
 This is the check that catches a colour mapped to the wrong role, and
 `SKILL.md` now hands these templates to readers, so a mistake reaches a
-reader rather than sitting in a branch. It needs a person or a session
-with browser access — headless chromium is denied `socket()` here. Set
-`data-theme="dark"` on the root element to pin the theme.
+reader rather than sitting in a branch. Use the `/browse` skill from
+gstack and pin the theme with `data-theme="dark"` on the root element;
+`AGENTS.md` covers the setup and the stale-daemon recovery.
 
 ### Medium
+
+**Close the three colour-in-script routes the check misses.**
+`check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
+`setProperty` and `setAttribute("style", ...)`. Three more reach CSS and
+were confirmed to get through on 2026-08-16 — a colour in
+`styleEl.textContent`, in `sheet.insertRule(...)`, and in a `style="…"`
+attribute built inside an `innerHTML` string. Each pins a colour to one
+theme exactly the way the check exists to prevent, and the `innerHTML`
+route is plausible in these templates. Small effort: three patterns
+added to `STYLE_SINK`, plus a fixture per route. No template trips them
+today, so this is closing the rule rather than repairing a breach.
+
+**Stop the drift suite exhausting the API budget.**
+`tests/test_update.sh` invokes `update.sh` five times and each call
+spends two GitHub API calls. Unauthenticated GitHub allows 60 an hour,
+so six full suite runs exhaust it — and the suite then reports green
+with drift detection skipped, which is a green run hiding an unexercised
+suite. That happened on 2026-08-16. Small to medium effort: fetch the
+tree once per run and reuse it, or point four of the five assertions at
+a stub and keep one live call as the integration check.
 
 **Confirm or withdraw the symlink install route.** `README.md` and
 decision `0005` both offer
@@ -40,6 +60,23 @@ whether the skill is listed — and impossible for an agent, because
 writes to `~/.claude/skills/` are denied.
 
 ### Low
+
+**Route the conversion-rules suite through `run()` in `run-all.sh`.**
+That one block is written out longhand instead of using the runner's
+`run()` helper, so it duplicates the pass and fail logic and cannot
+report a skip. Nothing is wrong today, because that suite never skips —
+`run-all.sh` always fetches the clone for it first. It becomes a real
+defect the moment the suite learns to skip, because the runner would
+call the skip a pass. Small effort: give `run()` an optional setup and
+teardown, or bracket the fetch outside it.
+
+**Read a JavaScript regex literal as a regex in `test_js_syntax.py`.**
+The literal scanner treats `/["']/` as the start of a string, so a regex
+containing a quote desynchronizes it. The consequence is bounded: it can
+only produce a false positive inside a style assignment, never a missed
+syntax error, and no template contains such a regex. Small to medium
+effort — distinguishing a regex from division needs the preceding token,
+which is why it was not done the first time.
 
 **Harden the HTML balance check against implicit end tags.**
 `lib/checks.py` `_Balance` requires explicit closing tags. HTML permits
