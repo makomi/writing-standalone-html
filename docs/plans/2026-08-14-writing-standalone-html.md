@@ -12,6 +12,26 @@
 
 **Decisions:** `docs/decisions/0001` through `0005`
 
+## Status — 2026-08-16
+
+Tasks 1 to 7 are done: the harness, the token file, the rules and all
+twenty templates. `./scripts/verify.sh` passes twenty files on five
+checks. **Task 8 is next** — the manifest and the update checker — then
+Task 9 (`SKILL.md`) and Task 10 (changelog and tag).
+
+Two things are outstanding inside the finished tasks, and both are
+unchecked steps above rather than hidden:
+
+- **The by-eye theme check.** Missing for `02`, `03`, `04`, `08`, `09`,
+  `12`, `13`, `14`, `15`, `16`, `18`, `19`, `20`. Every other template
+  was rendered in both themes when it landed. No script can make this
+  check, and it is the one that catches a colour mapped to the wrong
+  role.
+- **Exercising the interactive files** (Task 6, step 3). Every inline
+  script parses under `node --check`, but drag-and-drop, the tab
+  switch, the flag toggles and the ring demo have not been driven in a
+  browser since conversion.
+
 ## Global Constraints
 
 - Templates must contain **zero external references**. No CDN, no external CSS/JS/fonts/images. This is the property the whole project exists to preserve.
@@ -952,7 +972,7 @@ One file, end to end, before committing to the other nineteen. This is the cheap
 - Consumes: `references/design-system.css`, `references/conversion-rules.md`, `scripts/verify.sh`.
 - Produces: the first template, and a validated conversion procedure.
 
-- [ ] **Step 1: Borrow the clone and read the source in full**
+- [x] **Step 1: Borrow the clone and read the source in full**
 
 ```bash
 ./scripts/upstream.sh fetch
@@ -961,18 +981,18 @@ cat .upstream/01-exploration-code-approaches.html
 
 453 lines, zero raw hex outside `:root`. It was chosen as the pilot precisely because the color work is a straight token swap, isolating the content-collapse rules for their first test.
 
-- [ ] **Step 2: Capture the blob SHA for the provenance header**
+- [x] **Step 2: Capture the blob SHA for the provenance header**
 
 ```bash
 git -C .upstream \
   rev-parse 58c305be97f47b26b678f2c07dec01d4242268ec:01-exploration-code-approaches.html
 ```
 
-- [ ] **Step 3: Convert, following all seven rules in order**
+- [x] **Step 3: Convert, following all seven rules in order**
 
 Apply `references/conversion-rules.md` steps 1 through 6. For this file specifically: the three approach columns are repeated siblings under rule 4. Keep one column, mark it `<!-- repeat per approach -->`. The trade-off list inside the retained column is itself a repeated set — keep two items, since a single list item does not show that the list is a list.
 
-- [ ] **Step 4: Run verification**
+- [x] **Step 4: Run verification**
 
 ```bash
 ./scripts/verify.sh templates/01-exploration-code-approaches.html
@@ -980,21 +1000,21 @@ Apply `references/conversion-rules.md` steps 1 through 6. For this file specific
 
 Expected: `verify: all 1 file(s) passed`.
 
-- [ ] **Step 5: Check both themes by eye**
+- [x] **Step 5: Check both themes by eye**
 
 Open the file in a browser. Confirm in light mode, then switch the OS or browser to dark and confirm again. Look for: text that vanishes into its background, borders that disappear, and any element still showing an upstream color because its hex was missed inside an attribute.
 
-- [ ] **Step 6: Fix the rules if the pilot exposed a gap**
+- [x] **Step 6: Fix the rules if the pilot exposed a gap**
 
 If any judgment during Step 3 was not covered by `conversion-rules.md`, add it now, before nineteen more files inherit the ambiguity. Re-run `python3 tests/test_conversion_rules.py`.
 
-- [ ] **Step 7: Give the clone back**
+- [x] **Step 7: Give the clone back**
 
 ```bash
 ./scripts/upstream.sh clean
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add templates/01-exploration-code-approaches.html references/conversion-rules.md
@@ -1035,7 +1055,7 @@ one marked instance.
 
 `06`, `08` and `20` carry no colours outside `:root` at all; `07` and `12` carry two each. Effort here is concentrated in content collapse rather than re-tokenization.
 
-- [ ] **Step 1: Borrow the clone, then convert each file**
+- [x] **Step 1: Borrow the clone, then convert each file**
 
 ```bash
 ./scripts/upstream.sh fetch
@@ -1056,7 +1076,7 @@ File-specific notes for rule 4:
 - `16-implementation-plan.html` — milestones, risk-table rows and mockup blocks each repeat independently. Collapse each set separately; do not collapse the whole plan to one section.
 - `20-editor-prompt-tuner.html` — three sample inputs repeat, but the live re-render JS iterates them. Keep one sample and shrink the JS data array to match, which rule 6 permits.
 
-- [ ] **Step 2: Verify all six templates together**
+- [x] **Step 2: Verify all six templates together**
 
 ```bash
 ./scripts/verify.sh
@@ -1068,13 +1088,13 @@ Expected: `verify: all 6 file(s) passed`.
 
 Open all five new files in a browser, light then dark. `20-editor-prompt-tuner.html` additionally needs its live re-render exercised: type into the template field and confirm the sample output still updates.
 
-- [ ] **Step 4: Give the clone back**
+- [x] **Step 4: Give the clone back**
 
 ```bash
 ./scripts/upstream.sh clean
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add templates/
@@ -1121,7 +1141,7 @@ a flow needs two screens.
 
 Counts are raw hex outside `:root`, measured at `58c305b`. `04`, `13` and `09` carry theirs inside SVG attributes, which is the first exercise of that part of rule 3.
 
-- [ ] **Step 1: Borrow the clone, then convert in ascending order of hex count**
+- [x] **Step 1: Borrow the clone, then convert in ascending order of hex count**
 
 ```bash
 ./scripts/upstream.sh fetch
@@ -1145,7 +1165,7 @@ File-specific notes for rule 4:
 - `18-editor-triage-board.html` — thirty tickets across four columns. Keep one ticket, and keep all four columns: the columns are the taxonomy, not repeated content.
 - `19-editor-feature-flags.html` — flag rows repeat within groups, and groups repeat. Keep one group with two flags, because the dependency warning needs a prerequisite flag to point at.
 
-- [ ] **Step 2: Verify all seventeen templates together**
+- [x] **Step 2: Verify all seventeen templates together**
 
 ```bash
 ./scripts/verify.sh
@@ -1169,13 +1189,13 @@ Static checks cannot catch broken JS. In a browser, confirm:
 
 Pay particular attention to `03`'s severity tags and `12`'s timeline: both encode meaning in color, so a token mapped to the wrong role destroys information rather than just looking wrong.
 
-- [ ] **Step 5: Give the clone back**
+- [x] **Step 5: Give the clone back**
 
 ```bash
 ./scripts/upstream.sh clean
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add templates/
@@ -1216,7 +1236,7 @@ warning.
 - Consumes: the procedure, now exercised on 17 files.
 - Produces: all 20 templates.
 
-- [ ] **Step 1: Borrow the clone, then convert `05-design-system.html`**
+- [x] **Step 1: Borrow the clone, then convert `05-design-system.html`**
 
 ```bash
 ./scripts/upstream.sh fetch
@@ -1228,13 +1248,13 @@ Use Tier 1 tokens directly for swatch fills (`var(--clay)`, `var(--olive)`), and
 
 The swatch grid repeats. Keep one swatch per Tier 1 color, since the palette is the content.
 
-- [ ] **Step 2: Convert `11-status-report.html`**
+- [x] **Step 2: Convert `11-status-report.html`**
 
 37 raw hex, mostly in the inline chart. Chart series colors are semantic — shipped is `var(--ok)`, slipped is `var(--danger)` — so they map cleanly. Keep the chart's data array at three or four rounded, obviously-fake values per rule 5.
 
 The shipped and slipped lists repeat. Keep two entries in each, since a status report with one item in each column does not show the contrast it exists to show.
 
-- [ ] **Step 3: Convert `10-svg-illustrations.html`**
+- [x] **Step 3: Convert `10-svg-illustrations.html`**
 
 The hard file: 105 hex literals in SVG `fill`, `stroke` and `stop-color` attributes, outside the CSS cascade.
 
@@ -1258,7 +1278,7 @@ Gradients need care: `stop-color` also accepts `var()` via CSS, but each `<stop>
 
 The figure sheet holds several independent illustrations. Keep two, not one: the file's purpose is a sheet of figures, and one figure is not a sheet.
 
-- [ ] **Step 4: Verify all twenty templates**
+- [x] **Step 4: Verify all twenty templates**
 
 ```bash
 ./scripts/verify.sh
@@ -1266,7 +1286,7 @@ The figure sheet holds several independent illustrations. Keep two, not one: the
 
 Expected: `verify: all 20 file(s) passed`.
 
-- [ ] **Step 5: Measure the result against the estimate**
+- [x] **Step 5: Measure the result against the estimate**
 
 ```bash
 wc -l templates/*.html | tail -1
@@ -1274,17 +1294,37 @@ wc -l templates/*.html | tail -1
 
 The spec projects 4,000–5,000 lines from 11,611 upstream. Record the real number. If it lands far outside that band, say so rather than quietly accepting it: far below suggests content was over-stripped, far above suggests repeated content survived.
 
-- [ ] **Step 6: Check all three in both themes**
+**Measured 2026-08-16: 12,394 lines, far above the band.** The twenty
+upstream sources are 10,789 lines. Of the template total, 2,300 lines
+are the embedded token block (115 × 20) and roughly 600 are provenance
+headers, leaving 9,296 lines of template — 86% of upstream rather than
+the projected 40%.
+
+The estimate assumed content collapse would shrink a file by half or
+more. It cannot: in these files the bulk is genre CSS and interaction
+JavaScript, both kept whole by rules 6 and by the global constraints,
+and only markup and sample data collapse. The per-file ratio tracks
+that exactly — the markup-heavy `01` lands at 68%, while the CSS-heavy
+`20` and `16` land at 96% and 95%, and `15` at 101% because its
+eight-step series ramp added CSS the source carried in a JavaScript
+array.
+
+The estimate was wrong rather than the conversion, but the band was
+also the only mechanical guard against repeated content surviving a
+collapse, so a reading pass over the files above 90% is worth doing
+before the release.
+
+- [x] **Step 6: Check all three in both themes**
 
 `10` needs the closest look, since a missed `fill` attribute shows as an upstream color sitting unchanged on a dark background.
 
-- [ ] **Step 7: Give the clone back**
+- [x] **Step 7: Give the clone back**
 
 ```bash
 ./scripts/upstream.sh clean
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add templates/

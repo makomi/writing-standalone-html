@@ -11,9 +11,8 @@ reference. Open it in a browser and it works.
 
 ## Status
 
-**Tooling built, twelve of twenty templates converted.** Tasks 1 to 4
-of the ten-task plan are done, the batch conversion is under way, and
-every test passes.
+**All twenty templates converted; the skill has no trigger file yet.**
+Tasks 1 to 7 of the ten-task plan are done and every test passes.
 
 | Path | State |
 |---|---|
@@ -23,16 +22,19 @@ every test passes.
 | `scripts/upstream.sh` | Built — borrow and return the clone |
 | `scripts/stamp.sh` | Built — re-embed the token block |
 | `lib/`, `tests/` | Built — 4 test suites, all green |
-| `templates/` | 12 of 20 converted |
+| `templates/` | 20 of 20 converted |
 | `scripts/update.sh`, `SKILL.md` | Not written yet |
 
-Until `templates/` is populated the skill does nothing useful, because
-`SKILL.md` — the file Claude Code reads to trigger it — does not exist.
+The skill still does nothing useful, because `SKILL.md` — the file
+Claude Code reads to trigger it — does not exist.
 
-Eight templates remain: `03`, `04`, `09`, `13`, `14`, `15`, `18`, `19`.
-Convert them per `references/conversion-rules.md`, then pick up Task 8
-in `docs/plans/2026-08-14-writing-standalone-html.md`. Run the suite
-first; it should be green before anything is added.
+Next is Task 8 in `docs/plans/2026-08-14-writing-standalone-html.md`:
+the manifest and the update checker, then `SKILL.md` and the release.
+Run the suite first; it should be green before anything is added.
+
+Thirteen templates are still waiting on their by-eye check in both
+themes, and the interactive files have not been driven in a browser
+since conversion. The plan's status section names them.
 
 ## How it works
 
@@ -147,9 +149,11 @@ copy of upstream that can go stale without anyone noticing.
 ./scripts/verify.sh
 ```
 
-Checks every template: it parses, it holds no external reference, and
-it carries no raw hex outside the token block. A fourth check stays
-manual — that the page reads correctly in both light and dark themes.
+Checks every template: it parses, it holds no external reference, its
+token block matches `references/design-system.css` exactly, it carries
+no raw colour outside that block, and no upstream brand name survives.
+A sixth check stays manual — that the page reads correctly in both
+light and dark themes.
 
 ## License
 
