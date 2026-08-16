@@ -11,8 +11,8 @@ reference. Open it in a browser and it works.
 
 ## Status
 
-**All twenty templates converted; the skill has no trigger file yet.**
-Tasks 1 to 8 of the ten-task plan are done and every test passes.
+**Complete and working.** Tasks 1 to 9 of the ten-task plan are done and
+every test passes.
 
 | Path | State |
 |---|---|
@@ -25,14 +25,11 @@ Tasks 1 to 8 of the ten-task plan are done and every test passes.
 | `templates/MANIFEST.json` | Built — 20 records, pinned at `58c305b` |
 | `lib/`, `tests/` | Built — 5 test suites, all green |
 | `templates/` | 20 of 20 converted |
-| `SKILL.md` | Not written yet |
+| `SKILL.md` | Built — the trigger surface and the genre selection table |
 
-The skill still does nothing useful, because `SKILL.md` — the file
-Claude Code reads to trigger it — does not exist.
-
-Next is Task 9 in `docs/plans/2026-08-14-writing-standalone-html.md`:
-`SKILL.md`, then the release. Run the suite first; it should be green
-before anything is added.
+Next is Task 10 in `docs/plans/2026-08-14-writing-standalone-html.md`:
+the changelog and the `v1.0.0` tag. Run the suite first; it should be
+green before anything is added.
 
 Thirteen templates are still waiting on their by-eye check in both
 themes, and the interactive files have not been driven in a browser

@@ -14,12 +14,11 @@
 
 ## Status — 2026-08-16
 
-Tasks 1 to 8 are done: the harness, the token file, the rules, all
-twenty templates, and the manifest with the drift checker.
+Tasks 1 to 9 are done: the harness, the token file, the rules, all
+twenty templates, the manifest with the drift checker, and `SKILL.md`.
 `./scripts/verify.sh` passes twenty files on five checks, and
 `./scripts/update.sh` reads all twenty as unchanged at the pin.
-**Task 9 is next** — `SKILL.md`, which is what makes the skill trigger
-at all — then Task 10 (changelog and tag).
+**Task 10 is next** — the changelog and the `v1.0.0` tag.
 
 Two things are outstanding inside the finished tasks, and both are
 unchecked steps above rather than hidden:
@@ -1756,7 +1755,7 @@ The entry point. Everything before this task is inert until Claude Code can find
 - Consumes: all 20 templates, `references/design-system.css`, `references/conversion-rules.md`.
 - Produces: the skill's trigger surface and selection table.
 
-- [ ] **Step 1: Write `SKILL.md`**
+- [x] **Step 1: Write `SKILL.md`**
 
 The description is the trigger. Decision 0001 requires it to name genres, not the phrase "HTML file".
 
@@ -1847,7 +1846,7 @@ file in `templates/MANIFEST.json`. All upstream sample data was
 fictional and has been removed.
 ```
 
-- [ ] **Step 2: Confirm the front matter parses**
+- [x] **Step 2: Confirm the front matter parses**
 
 ```bash
 python3 -c "
@@ -1865,7 +1864,7 @@ print(f'front matter ok, description {len(desc)} chars')
 "
 ```
 
-- [ ] **Step 3: Confirm every template named in the table exists**
+- [x] **Step 3: Confirm every template named in the table exists**
 
 ```bash
 python3 -c "
@@ -1883,7 +1882,7 @@ print(f'all {len(named)} templates named and present')
 
 Expected: `all 20 templates named and present`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add SKILL.md
