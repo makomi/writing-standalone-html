@@ -336,8 +336,8 @@
     .stage {
       height: 280px;
       border-radius: var(--radius-row);
-      border: var(--border-width) solid var(--border);
-      background: var(--bg);
+      border: var(--border-width) solid var(--gray-300);
+      background: var(--ivory);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -364,6 +364,10 @@
        custom properties describe a preview surface that stays fixed
        regardless of the page's own light/dark theme, so they draw
        from Tier 1 and the theme-invariant code roles, not Tier 2.
+       The .stage ground and border above obey the same rule, which
+       is why they are var(--ivory) and var(--gray-300): a Tier 2
+       ground there would darken under the page theme while --fg
+       stayed slate, and the headings would vanish.
        ========================================================= */
 
     .stage        { --fg: var(--slate); --muted: var(--gray-500); --line: var(--gray-300); --panel: var(--white); }

@@ -18,6 +18,13 @@ measurements — lives in commit bodies. See the changelog rules in
   colour into CSS through `style`, `cssText`, `setProperty` or
   `setAttribute`. A colour set that way pins itself to one theme.
 
+### Fixed
+
+- The design previews in `02-exploration-visual-designs.html` keep the
+  ground the page's own `Background: Light / Dark` control selects. In
+  dark theme the light preview had taken the page's dark ground while
+  its text stayed dark, which hid both empty-state headings.
+
 ## [1.0.0] - 2026-08-16
 
 ### Added
