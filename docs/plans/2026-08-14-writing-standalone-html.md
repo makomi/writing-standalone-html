@@ -14,14 +14,15 @@
 
 ## Status — 2026-08-16
 
-Tasks 1 to 9 are done: the harness, the token file, the rules, all
-twenty templates, the manifest with the drift checker, and `SKILL.md`.
-`./scripts/verify.sh` passes twenty files on five checks, and
-`./scripts/update.sh` reads all twenty as unchanged at the pin.
-**Task 10 is next** — the changelog and the `v1.0.0` tag.
+**All ten tasks are done and `v1.0.0` is tagged.** The harness, the
+token file, the rules, all twenty templates, the manifest with the
+drift checker, `SKILL.md` and the release. `./scripts/verify.sh` passes
+twenty files on five checks, `./scripts/update.sh` reads all twenty as
+unchanged at the pin, and all five suites are green.
 
 Two things are outstanding inside the finished tasks, and both are
-unchecked steps above rather than hidden:
+unchecked steps above rather than hidden. Neither blocked the release,
+and both are the same check: a person looking at a rendered page.
 
 - **The by-eye theme check.** Missing for `02`, `03`, `04`, `08`, `09`,
   `12`, `13`, `14`, `15`, `16`, `18`, `19`, `20`. Every other template
@@ -1918,7 +1919,7 @@ skill does not collide with frontend-design or artifact-design.
 - Consumes: everything.
 - Produces: a tagged `v1.0.0`.
 
-- [ ] **Step 1: Run the whole test suite**
+- [x] **Step 1: Run the whole test suite**
 
 `tests/test_conversion_rules.py` reads upstream sources, so it is
 bracketed by fetch and clean. Everything else runs without a clone.
@@ -1934,7 +1935,7 @@ python3 tests/test_tokens.py && \
 
 Expected: every suite passes and `verify: all 20 file(s) passed`. Do not proceed past a failure — fix it and re-run.
 
-- [ ] **Step 1b: Confirm the tree is clean and no clone survived**
+- [x] **Step 1b: Confirm the tree is clean and no clone survived**
 
 ```bash
 git status --porcelain
@@ -1943,7 +1944,7 @@ git status --porcelain
 
 Expected: no output from `git status`, and `ok: no clone left`.
 
-- [ ] **Step 2: Write `CHANGELOG.md`**
+- [x] **Step 2: Write `CHANGELOG.md`**
 
 Entries are limited to what a person who installed the skill would
 notice. Apply the changelog rules in `AGENTS.md`; in particular,
@@ -1954,8 +1955,15 @@ Replace the `[Unreleased]` section rather than adding below it — that
 section currently states there is no user-facing surface, which stops
 being true at this release.
 
+> **Amended 2026-08-16, during implementation.** The heading below
+> carries this plan's authoring date. The release date is the date the
+> tag is cut, 2026-08-16. The Added list also landed one commit earlier,
+> in Task 9: `SKILL.md` is what makes the skill reachable, and AGENTS.md
+> rules out assembling the changelog afterwards from a run of commits.
+> Task 10 turns the `[Unreleased]` heading into the release.
+
 ```markdown
-## [1.0.0] - 2026-08-14
+## [1.0.0] - 2026-08-16
 
 ### Added
 
@@ -1974,7 +1982,7 @@ being true at this release.
   of an ingest run.
 ```
 
-- [ ] **Step 3: Commit and tag**
+- [x] **Step 3: Commit and tag**
 
 ```bash
 git add CHANGELOG.md
@@ -1989,7 +1997,7 @@ git commit -m "docs(changelog): add changelog for v1.0.0
 git tag -a v1.0.0 -m "v1.0.0 — twenty templates, two-tier tokens, drift detection"
 ```
 
-- [ ] **Step 4: Report the install command**
+- [x] **Step 4: Report the install command**
 
 The skill cannot install itself (decision 0005). Print the command for the user to run:
 

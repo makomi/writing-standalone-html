@@ -10,7 +10,7 @@ Internal work — tests, refactors, tooling fixes, corrections to our own
 measurements — lives in commit bodies. See the changelog rules in
 `AGENTS.md`.
 
-## [Unreleased]
+## [1.0.0] - 2026-08-16
 
 ### Added
 

@@ -11,8 +11,8 @@ reference. Open it in a browser and it works.
 
 ## Status
 
-**Complete and working.** Tasks 1 to 9 of the ten-task plan are done and
-every test passes.
+**`v1.0.0`.** All ten tasks of the build plan are done and every test
+passes.
 
 | Path | State |
 |---|---|
@@ -27,13 +27,10 @@ every test passes.
 | `templates/` | 20 of 20 converted |
 | `SKILL.md` | Built — the trigger surface and the genre selection table |
 
-Next is Task 10 in `docs/plans/2026-08-14-writing-standalone-html.md`:
-the changelog and the `v1.0.0` tag. Run the suite first; it should be
-green before anything is added.
-
-Thirteen templates are still waiting on their by-eye check in both
-themes, and the interactive files have not been driven in a browser
-since conversion. The plan's status section names them.
+One check is open, and no script can make it: thirteen templates are
+waiting on a look in both themes, and the interactive files have not
+been driven in a browser since conversion. The plan's status section
+names them.
 
 ## How it works
 
