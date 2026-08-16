@@ -249,13 +249,39 @@ plays. Regex-stripping hand-written HTML mangles it. So the work splits:
   agent under the written rules in `references/conversion-rules.md`
   (ingest mode, section 6).
 
-### 4.4 Size estimate
+### 4.4 Size
 
-11,611 upstream lines are expected to become roughly 4,000–5,000 across
-the 20 templates. This is an estimate derived from the CSS-to-content
-ratio (CSS survives conversion near-intact; repeated content does not),
-not a measurement — it will be checked against the actual converted
-line count once conversion runs.
+**Superseded 2026-08-16 by measurement.** This section projected
+4,000–5,000 lines from 11,611 upstream. The converted set is 12,394
+lines, of which 2,300 are the embedded token block (115 × 20) and about
+600 are provenance headers, leaving 9,296 against 10,789 upstream.
+
+The projection assumed content collapse would halve a file. It cannot.
+Splitting the six longest templates against their sources shows where
+the length actually sits:
+
+| Part | Template vs upstream |
+|---|---|
+| Markup | 85–103% |
+| CSS | 95–99% |
+| JavaScript | 92–102% |
+
+CSS and JavaScript are kept whole by rule 6 and by the global
+constraints, so only markup and sample data can shrink — and in these
+files the repetition was never in the markup to begin with. The 24
+tickets in `18-editor-triage-board.html` live in a JavaScript data
+array, so collapsing them to four moved the JS line count, not the
+markup. Where markup did carry the repetition it did shrink:
+`09-slide-deck.html` to 85%, `07-prototype-animation.html` to 88%.
+
+A reading pass over the six longest templates on 2026-08-16 confirmed
+every repeated unit is collapsed to between one and four instances, each
+marked. No repeated content survived.
+
+**There is no target line count.** A converted template is the length
+its genre CSS and interaction logic make it. Rule 4 and the marker
+comments are the guard against repeated content surviving; a line-count
+band never was one, and a number nobody can hit is worse than none.
 
 ## 5. Repo layout
 

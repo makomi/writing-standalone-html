@@ -1316,6 +1316,16 @@ also the only mechanical guard against repeated content surviving a
 collapse, so a reading pass over the files above 90% is worth doing
 before the release.
 
+**Reading pass done 2026-08-16, after the release.** Every repeated unit
+in the six longest templates collapses to between one and four
+instances, each marked, so nothing survived. Splitting them against
+their sources puts markup at 85–103%, CSS at 95–99% and JavaScript at
+92–102%: the length is the machinery rules 6 keeps whole, not content.
+The repetition often was not in the markup at all — the 24 tickets in
+`18` live in a JavaScript array, so collapsing them to four moved the JS
+count. Spec section 4.4 is rewritten to record this and to withdraw the
+target; there is no line count a template is supposed to hit.
+
 - [x] **Step 6: Check all three in both themes**
 
 `10` needs the closest look, since a missed `fill` attribute shows as an upstream color sitting unchanged on a dark background.
