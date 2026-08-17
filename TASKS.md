@@ -30,6 +30,20 @@ than a substitution, which is what holds this at Medium: a fill that is
 Tier 1 on Tier 1 cannot be repaired by darkening a variant the way
 `--accent` and `--ok` were.
 
+**Teach `scripts/audit-contrast.js` that a positioned child need not
+sit on its parent's fill.** The script takes the ground from the
+nearest ancestor with a background colour. `07-prototype-animation.html`
+puts each beat label in an absolutely positioned `em` and `span` inside
+the 12px `.key` dot, offset clear of it by `top: 16px` and
+`bottom: 16px`. The labels paint on the panel — `--text-muted` on
+`--surface`, 10.90:1 — and the audit reports them against the dot's
+`--accent` and `--ok` fill at about 2.0:1. Six phantom failures in that
+one file, in both themes, confirmed non-overlapping by comparing the
+two bounding rects on 2026-08-17. An audit that cries wolf gets read
+less carefully. Fix: compare the text node's rect against the
+candidate ancestor's and keep walking up when they do not intersect,
+or read the painted pixel instead of the cascade.
+
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
 `setProperty` and `setAttribute("style", ...)`. Three more reach CSS and

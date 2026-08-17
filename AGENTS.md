@@ -108,6 +108,13 @@ An empty array is a pass. It is an audit aid, not a suite member: it
 needs a browser, and a browser must not become a dependency of
 `tests/run-all.sh`.
 
+It takes the ground from the nearest ancestor that paints one, so a
+child positioned clear of its parent is reported against a fill it
+never touches. The six beat labels in `07-prototype-animation.html` are
+the known case: they read as ~2.0:1 on the dot and actually paint on
+the panel at 10.90:1. Check the two bounding rects before believing a
+finding whose ground is a small shape. `TASKS.md` carries the fix.
+
 ## What this environment cannot do
 
 - **No writing to `~/.claude/skills/`.** The skill cannot install
