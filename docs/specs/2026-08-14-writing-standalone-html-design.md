@@ -92,7 +92,7 @@ Illustrative shape (full definitions live in
 
   /* Tier 1 — variants this project adds, because upstream's accent
      hues do not clear 4.5:1 as text on either ground */
-  --clay-deep: #c0502b;  --olive-deep: #677850;
+  --clay-deep: #b34a28;  --olive-deep: #60704b;
   --ink: #1a1a18;  --ink-raised: #232320;
   --clay-light: #e89b80;  --olive-light: #9bb07a;  --rust-light: #d9695c;
 
@@ -118,6 +118,14 @@ severity label needs. In these genres those colors are text — "shipped",
 "blocker", a jump link — so the roles point at `--clay-deep` and
 `--olive-deep` instead. Upstream's `--clay` and `--olive` keep their
 exact values in Tier 1 and stay available for decorative fills.
+
+*Retuned 2026-08-17.* The first values, `#c0502b` and `#677850`, were
+measured against `--bg` only, where they reached 4.51:1 and 4.55:1.
+They fall to 4.09:1 and 4.13:1 on `--surface-sunken`, which is the
+darkest light ground and therefore the one that binds — and two
+templates put accent text there. The values above clear 4.5:1 on all
+three light grounds; `tests/test_tokens.py` checks the sunken pairing
+so the near-miss cannot come back.
 
 **Borders split in two.** `--border` is a decorative hairline with no
 contrast floor, which is why upstream's soft `#d1cfc5` survives

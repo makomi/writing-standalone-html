@@ -9,29 +9,6 @@ task comes from here rather than from
 
 ## Prioritized
 
-### High
-
-**Test the token pair that fails, `--accent` on `--surface-sunken`.**
-`tests/test_tokens.py` checks `--accent` against `--bg` and `--surface`
-and passes at 4.51:1 and 4.75:1. It never checks `--surface-sunken`,
-where the same accent reaches only 4.09:1, and `--ok` only 4.13:1 —
-both short of the 4.5:1 small text needs. Two shipped templates land
-there: the slot chips in `20-editor-prompt-tuner.html` and the addition
-count in `17-pr-writeup.html`. Dark theme passes; this is a light-theme
-defect only.
-
-Adding the pair to `PAIRS` turns a silent near-miss into a red suite,
-which is the point — but it also decides something. Either the deep
-variants get retuned until they clear 4.5:1 on the sunken surface, or
-that pairing is ruled out and the two templates move their accent text
-to `--surface`. Invariant 4 permits the first: `--clay-deep` and
-`--olive-deep` are this project's own, not upstream's palette.
-
-The scope is exactly those two. Every other role was computed against
-`--surface-sunken` on 2026-08-16 and clears: `--text-muted` at 9.38:1
-and `--danger` at 4.64:1 in light, and all four in dark, the tightest
-being `--danger` at 5.38:1.
-
 ### Medium
 
 **Raise the four fixed fills that fail AA.** Found by
@@ -49,7 +26,9 @@ themes because each is Tier 1 on Tier 1:
 button to `--clay-deep` for exactly this reason, and recorded that the
 artboard stays theme-invariant because `--clay-deep` is Tier 1 too. The
 same move fixes the `16` button. The other three need a decision rather
-than a substitution, which is why this sits below the token-pair task.
+than a substitution, which is what holds this at Medium: a fill that is
+Tier 1 on Tier 1 cannot be repaired by darkening a variant the way
+`--accent` and `--ok` were.
 
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
@@ -132,11 +111,12 @@ backlog above is what remains.
 ## Open questions
 
 **Should the post-`v1.0.0` work be tagged?** `CHANGELOG.md` carries an
-`[Unreleased]` section with two user-facing entries: `scripts/verify.sh`
-gained a sixth check, and `02-exploration-visual-designs.html` no longer
-hides its preview headings in dark theme. That is a `v1.1.0` by semver —
-the added capability outranks the fix. Blocked on whether the skill has
-been installed anywhere yet. If nobody has `v1.0.0`, folding both into a
-re-cut `v1.0.0` is cleaner than shipping two tags nobody used; if
-somebody does have it, the fix alone argues for tagging soon, because it
-is a defect a reader meets on their first dark-mode page.
+`[Unreleased]` section with three user-facing entries: `scripts/verify.sh`
+gained a sixth check, `02-exploration-visual-designs.html` no longer
+hides its preview headings in dark theme, and `--accent` and `--ok` are
+legible on a sunken panel in light theme. That is a `v1.1.0` by semver —
+the added capability outranks the two fixes. Blocked on whether the skill
+has been installed anywhere yet. If nobody has `v1.0.0`, folding all
+three into a re-cut `v1.0.0` is cleaner than shipping two tags nobody
+used; if somebody does have it, the fixes argue for tagging soon,
+because both are defects a reader meets on a first read.

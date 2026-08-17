@@ -27,6 +27,13 @@ ROLES = [
 # link — and text is what WCAG 1.4.3 measures. Holding them to the
 # graphical-object floor would pass colors nobody can read at 14px.
 #
+# --accent and --ok are checked against --surface-sunken as well as the
+# other two grounds. Sunken is the darkest light ground, so it is the
+# pairing that binds: an accent that clears 4.5:1 there clears it on
+# --bg and --surface too. Templates put accent text on a sunken panel —
+# the slot chips in 20, the addition count in 17 — so the pairing is
+# real, not hypothetical.
+#
 # --border is deliberately absent. It is a decorative hairline, not a
 # UI component boundary, so WCAG 1.4.11 does not apply to it and
 # demanding 3:1 would force a near-black rule between every table row.
@@ -39,7 +46,9 @@ PAIRS = [
     ("--text-muted", "--surface", 4.5),
     ("--accent", "--bg", 4.5),
     ("--accent", "--surface", 4.5),
+    ("--accent", "--surface-sunken", 4.5),
     ("--ok", "--bg", 4.5),
+    ("--ok", "--surface-sunken", 4.5),
     ("--warn", "--bg", 4.5),
     ("--danger", "--bg", 4.5),
     ("--border-strong", "--bg", 3.0),

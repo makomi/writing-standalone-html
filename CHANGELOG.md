@@ -20,6 +20,12 @@ measurements — lives in commit bodies. See the changelog rules in
 
 ### Fixed
 
+- Accent and success text is legible on a sunken panel in light theme.
+  `--accent` and `--ok` reached only 4.09:1 and 4.13:1 on
+  `--surface-sunken`, short of the 4.5:1 that text needs; the two
+  tokens behind them are darker, and both pairings now clear it. The
+  slot chips in `20-editor-prompt-tuner.html` and the addition count in
+  `17-pr-writeup.html` are the places a reader sees this.
 - The design previews in `02-exploration-visual-designs.html` keep the
   ground the page's own `Background: Light / Dark` control selects. In
   dark theme the light preview had taken the page's dark ground while

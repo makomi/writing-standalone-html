@@ -19,11 +19,14 @@
 
   /* Tier 1 — added by this project, never in upstream.
      Deep variants carry the accent hues at text-legible contrast on
-     ivory; upstream's clay reaches only 2.96:1 there and its olive
-     only 3.49:1, both short of the 4.5:1 a status label needs.
+     every light ground; upstream's clay reaches only 2.96:1 on ivory
+     and its olive only 3.49:1, both short of the 4.5:1 a status label
+     needs. They are measured against --surface-sunken, the darkest of
+     the three light grounds: 4.60:1 and 4.62:1 there, 5.08:1 and
+     5.09:1 on --bg, 5.35:1 and 5.36:1 on --surface.
      Light variants do the same job against the dark ground. */
-  --clay-deep:   #c0502b;
-  --olive-deep:  #677850;
+  --clay-deep:   #b34a28;
+  --olive-deep:  #60704b;
   --ink:         #1a1a18;
   --ink-raised:  #232320;
   --clay-light:  #e89b80;
