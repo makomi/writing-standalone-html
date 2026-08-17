@@ -491,6 +491,15 @@ absent rather than as wrong. What stays unautomatable is the legibility
 judgment the ratio cannot make — whether a colour carries the meaning
 its role claims.
 
+**Amended 2026-08-17.** The script took the ground from the nearest
+ancestor that painted one, which reported a positioned child against a
+fill it never touches — six phantom failures in
+`07-prototype-animation.html`. The ground is now the nearest ancestor
+that paints *and* contains the text box, and text crossing a ground's
+edge is reported with `"straddles": true`. The lesson generalizes: an
+automated check that over-reports gets read less carefully, so a false
+positive costs as much as a miss in a tool a person reads by hand.
+
 ## 8. Constraints and open risks
 
 - **Installation constraint (D5).** The agent's sandbox cannot write to

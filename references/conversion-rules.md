@@ -80,6 +80,12 @@ Upstream reached the same conclusion independently: three files define
 their own `--clay-d: #b85c3e` for exactly this. Map to the role, not to
 the raw name, and contrast is handled for you.
 
+Both variants are measured against `--surface-sunken`, the darkest of
+the three light grounds. That is the pairing that binds: a role which
+clears 4.5:1 there clears it on `--bg` and `--surface` too. When a new
+text colour has to be judged, judge it on the sunken panel, not on the
+page background.
+
 ### Code blocks
 
 Code blocks are theme-invariant: they stay dark in both themes, the way

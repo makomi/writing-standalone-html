@@ -122,6 +122,11 @@ look at the page rather than trusting the number.
 - **No writing to `~/.claude/skills/`.** The skill cannot install
   itself; decision 0005 records why. Print the command and let a person
   run it.
+- **No `git add -A`.** The sandbox masks `.bashrc`, `.env`, `.mcp.json`
+  and a dozen more dotfiles into the repo root as character devices.
+  They show up as untracked, and git refuses the whole staging run with
+  "can only add regular files". Stage explicit pathspecs instead. The
+  files are not repo content and must never be committed.
 - **Only 60 unauthenticated GitHub API calls an hour.** A budget rather
   than a wall. See "Running the checks" for what that costs and how to
   raise it.

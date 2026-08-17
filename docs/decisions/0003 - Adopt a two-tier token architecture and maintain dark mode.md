@@ -64,6 +64,16 @@ these roles need as text. `--accent` and `--ok` therefore resolve to new
 values untouched. Upstream reached the same conclusion independently,
 defining `--clay-d: #b85c3e` in three files.
 
+**Note added 2026-08-17.** That first pass measured the two variants
+against `--bg` alone, where they cleared 4.51:1 and 4.55:1, and missed
+that `--surface-sunken` is darker still: 4.09:1 and 4.13:1 there, on a
+ground two shipped templates put accent text on. The variants were
+retuned and `tests/test_tokens.py` gained the sunken pairings. The
+architecture is unchanged — this is what invariant 4 anticipates, a
+contrast defect repaired in a variant this project owns rather than in
+upstream's palette. The rule that follows: measure a light-theme text
+role against the darkest light ground, not against the page.
+
 ## Alternatives rejected
 
 **Stay faithful to upstream's color-named tokens, no dark mode.** Cheaper
