@@ -47,24 +47,43 @@ the task is taken on.
 
 ### Medium
 
-**Raise the four fixed fills that fail AA.** Found by
-`scripts/audit-contrast.js` on 2026-08-16, each identical in both
-themes because each is Tier 1 on Tier 1:
+**Raise the fixed fills that fail AA.** Found by
+`scripts/audit-contrast.js` on 2026-08-16 and re-measured on
+2026-08-17, each identical in both themes because each is Tier 1 on
+Tier 1:
 
-| Where | Pair | Ratio |
-|---|---|---|
-| `16` Post button | `--white` on `--clay` | 3.12 |
-| `12` deleted diff line | `--rust` on `--code-bg` | 3.42 |
-| `02` preview body text | `--gray-500` on the fixed ground | 3.47 |
-| `16` second avatar | `--white` on `--olive` | 3.68 |
+| Where | Pair | Ratio | Nodes |
+|---|---|---|---|
+| `16` Post button | `--white` on `--clay` | 3.12 | 1 |
+| `12` deleted diff line | `--rust` on `--code-bg` | 3.42 | 1 |
+| `02` empty-state body | `--gray-500` on `--ivory` | 3.47 | 1 |
+| `02` step detail | `--gray-500` on `--white` | 3.65 | 3 |
+| `16` second avatar | `--white` on `--olive` | 3.68 | 1 |
+
+`02` carries two grounds, not one: fixing the ivory node leaves three
+white ones reported. Seven nodes in five pairings.
 
 `02` already solved this shape once: header note (6) moved the primary
 button to `--clay-deep` for exactly this reason, and recorded that the
 artboard stays theme-invariant because `--clay-deep` is Tier 1 too. The
-same move fixes the `16` button. The other three need a decision rather
-than a substitution, which is what holds this at Medium: a fill that is
-Tier 1 on Tier 1 cannot be repaired by darkening a variant the way
-`--accent` and `--ok` were.
+same move fixes the `16` button. The rest need a decision rather than a
+substitution, which is what holds this at Medium: a fill that is Tier 1
+on Tier 1 cannot be repaired by darkening a variant the way `--accent`
+and `--ok` were.
+
+**Put `scripts/audit-contrast.js` under test.** Nothing in
+`tests/` exercises it. Its ground rule changed on 2026-08-17 — an
+ancestor counts only if it contains the text box, and a straddling
+ground is reported with `"straddles": true` — and that logic was
+verified by hand against scratch pages that no longer exist. The next
+edit can reintroduce the false positive silently, in the one tool the
+theme review depends on. Medium effort: lift the pure helpers
+(`contrast`, `luminance`, `contains`, `intersects`) into a form node
+can import, and add a suite that skips when node is absent, the way
+`test_js_syntax.py` does. No browser, so `run-all.sh` keeps its rule
+that a browser is never a dependency. The cases worth pinning are the
+three the fix turned on: contained, straddling, and no painted
+ancestor at all.
 
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
@@ -95,6 +114,26 @@ whether the skill is listed — and impossible for an agent, because
 writes to `~/.claude/skills/` are denied.
 
 ### Low
+
+**Stop the fixture re-stamp destroying the drift it tests.** Editing
+`references/design-system.css` means running `stamp.sh` twice: once for
+`templates/`, which it defaults to, and once for `tests/fixtures/`,
+which it does not. The second run overwrites the deliberate
+`--bg: var(--white)` edit in `bad-token-drift.html` — the whole point
+of that fixture — and the only record of what the drift was is git
+history. `test_verify.sh` goes red, so nothing ships broken; the cost
+is the archaeology. Small effort: have the fixture derive its drift
+from the source at test time, or teach `stamp.sh` to cover fixtures and
+re-apply the known edit. Hit on 2026-08-17 during the token retune.
+
+**Ignore the dotfiles the sandbox masks into the repo root.** About a
+dozen — `.bashrc`, `.env`, `.mcp.json`, `.vscode` and more — appear as
+character devices owned by `nobody`. They are not repo content, they
+sit in `git status` as untracked forever, and they make `git add -A`
+fail outright with "can only add regular files". `AGENTS.md` records
+the workaround, which is to stage explicit pathspecs. Trivial effort:
+list them in `.gitignore` and confirm `git add -A` then succeeds. Left
+at Low because the workaround costs nothing once known.
 
 **Say why `15` can report that nothing moved.** "remove a node" deletes
 a node at random, so the ring sometimes reads "0 (0%) moved on last
