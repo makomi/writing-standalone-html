@@ -20,6 +20,12 @@ measurements — lives in commit bodies. See the changelog rules in
 
 ### Fixed
 
+- `scripts/audit-contrast.js` measures a text node against the ground
+  it is painted on, not against any ancestor that happens to paint one.
+  A label positioned clear of its parent was reported against a fill it
+  never touches; six such phantom failures came out of
+  `07-prototype-animation.html`. Text that crosses a ground's edge is
+  still reported, marked `"straddles": true`.
 - Accent and success text is legible on a sunken panel in light theme.
   `--accent` and `--ok` reached only 4.09:1 and 4.13:1 on
   `--surface-sunken`, short of the 4.5:1 that text needs; the two

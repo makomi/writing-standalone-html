@@ -30,15 +30,61 @@
     return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
   }
 
-  /* The nearest ancestor that actually paints. A translucent layer is
+  /* Rect geometry. The half-pixel slack absorbs subpixel rounding, so
+     a child that fills its parent exactly is not read as overflowing
+     it. */
+  var EPS = 0.5;
+
+  function contains(outer, inner) {
+    return outer.left - EPS <= inner.left
+        && outer.right + EPS >= inner.right
+        && outer.top - EPS <= inner.top
+        && outer.bottom + EPS >= inner.bottom;
+  }
+
+  function intersects(a, b) {
+    return a.left < b.right && a.right > b.left
+        && a.top < b.bottom && a.bottom > b.top;
+  }
+
+  /* What the page paints behind a text box. A translucent layer is
      skipped rather than blended: the aim is to name suspects, and a
-     blend would invent a colour no token declares. */
-  function groundOf(el) {
+     blend would invent a colour no token declares.
+
+     Ancestry alone does not make a ground. An absolutely positioned
+     child can sit clear of the parent it is nested in — the beat
+     labels in 07-prototype-animation.html are offset above and below
+     the 12px dot they belong to, and paint on the panel behind it. So
+     an ancestor counts only if it contains the text box.
+
+     An ancestor that overlaps without containing is a real ground for
+     part of the run: the text straddles an edge, half on a chip and
+     half off it. Those are collected and the caller reports whichever
+     ground reads worst. */
+  function groundsOf(el) {
+    var box = el.getBoundingClientRect();
+    var partial = [];
     var n = el;
     while (n && n.nodeType === 1) {
       var c = parse(getComputedStyle(n).backgroundColor);
-      if (c && c.a > 0.5) return c;
+      if (c && c.a > 0.5) {
+        var rect = n.getBoundingClientRect();
+        if (contains(rect, box)) return { ground: c, partial: partial };
+        if (intersects(rect, box)) partial.push(c);
+      }
       n = n.parentElement;
+    }
+    return { ground: pageGround(), partial: partial };
+  }
+
+  /* The ground of last resort, for a text box no painted ancestor
+     contains. Reading the root rather than assuming white keeps the
+     script honest in dark theme. */
+  function pageGround() {
+    var roots = [document.documentElement, document.body];
+    for (var i = 0; i < roots.length; i++) {
+      var c = roots[i] && parse(getComputedStyle(roots[i]).backgroundColor);
+      if (c && c.a > 0.5) return c;
     }
     return { r: 255, g: 255, b: 255, a: 1 };
   }
@@ -70,22 +116,33 @@
     var fg = parse(cs.color);
     if (!fg || fg.a < 0.5) return;
 
-    var bg = groundOf(el);
+    var grounds = groundsOf(el);
+    var bg = grounds.ground;
     var ratio = contrast(fg, bg);
+    var straddles = false;
+    grounds.partial.forEach(function (c) {
+      var r = contrast(fg, c);
+      if (r < ratio) { ratio = r; bg = c; straddles = true; }
+    });
+
     var size = parseFloat(cs.fontSize);
     var bold = parseInt(cs.fontWeight, 10) >= 700;
     var large = size >= 24 || (size >= 18.66 && bold);
     var needs = large ? 3 : 4.5;
 
     if (ratio < needs) {
-      found.push({
+      var finding = {
         selector: describe(el),
         text: el.textContent.trim().slice(0, 40),
         color: cs.color,
         ground: "rgb(" + bg.r + "," + bg.g + "," + bg.b + ")",
         ratio: Math.round(ratio * 100) / 100,
         needs: needs
-      });
+      };
+      /* The text crosses this ground's edge rather than sitting on it,
+         so the ratio holds for part of the run. Look at the page. */
+      if (straddles) finding.straddles = true;
+      found.push(finding);
     }
   });
 
