@@ -147,8 +147,9 @@ backlog above is what remains.
 ## Open questions
 
 **Should the post-`v1.0.0` work be tagged?** `CHANGELOG.md` carries an
-`[Unreleased]` section with four user-facing entries: `scripts/verify.sh`
-gained a sixth check, `02-exploration-visual-designs.html` no longer
+`[Unreleased]` section with four user-facing entries:
+`scripts/verify.sh` gained a sixth check,
+`02-exploration-visual-designs.html` no longer
 hides its preview headings in dark theme, `--accent` and `--ok` are
 legible on a sunken panel in light theme, and `audit-contrast.js` stops
 reporting a positioned label against a fill it never touches. That is a
