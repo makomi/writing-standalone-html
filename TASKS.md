@@ -21,7 +21,33 @@ were tried on 2026-08-19 and all three are closed; `AGENTS.md`, under
 "Installing after a change", records which and what is already known,
 so the next session does not spend itself rediscovering them.
 
+**Stop `run-all.sh` reporting a partly-skipped suite as fully skipped.**
+Its only signal is a `SKIP` line in a suite's output, so
+`test_update.sh` — which runs eleven stub assertions and skips only its
+final live GitHub check — reports as `drift detection: skipped`. That
+understates coverage in exactly the way the API-budget task was filed
+to stop: a reader trusting the summary line believes drift detection
+never ran, when all of the classification did. Sits at Medium because
+the summary line is what a person reads, and it is wrong in the safe
+direction only by accident. Small effort, with a wrinkle: a suite needs
+a way to report "ran, with a named gap" — a machine-readable trailer,
+or the runner counting `SKIP` lines against `ok:` lines — and
+`run-all.sh` has no suite of its own, so the change needs a way to
+prove itself.
+
 ### Low
+
+**Test the rate-limit path that turns an exhausted budget into exit 2.**
+`_get`'s 403 branch in `lib/github.py` and the populated path of
+`budget_note()` have only ever run against live GitHub. The 403 branch
+is the one that keeps an exhausted budget reading as "the check could
+not run" rather than as drift, which is the confusion the distinct exit
+codes exist to prevent, so a silent regression there costs more than
+its size suggests. Low because the branch is six lines and has not
+changed since it was written. Small effort now that the stub exists:
+add a `ratelimited` mode to `tests/stub_github.py` that serves 403 with
+the rate-limit body and `X-RateLimit-*` headers, then assert exit 2,
+the message, and the budget line.
 
 **Stop the fixture re-stamp destroying the drift it tests.** Editing
 `references/design-system.css` means running `stamp.sh` twice: once for
