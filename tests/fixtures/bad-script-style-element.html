@@ -133,27 +133,12 @@ body { background: var(--bg); color: var(--text); }
 <body>
 <p>Fixture body.</p>
 <script>
-// Every one of these is legitimate and must not be reported. The check
-// triggers on the sink, not on the string.
-const el = document.querySelector("p");
-el.style.setProperty("--card-shadow", "0 2px 8px var(--border)");
-el.style.background = "var(--surface)";
-el.dataset.tint = "#d97757";               // data, never reaches CSS
-el.textContent = "red";                    // a word, not a colour
-el.classList.add("is-danger");             // the sanctioned route
-el.style.opacity = "1"; log("#d97757");    // statement already ended
-const help = "https://example.com/#abc123";
-el.style.color = swatch;                   // was "#d97757" before tokens
-
-// The three routes closed on 2026-08-18, each written the sanctioned
-// way. A token in a sink is what a converted template looks like, and
-// none of these may be reported.
+// A stylesheet built as the text of a <style> element. It never touches
+// an element's style property, so the sink list had to learn the shape:
+// the colour lands in the cascade all the same, pinned to one theme.
 const styleEl = document.createElement("style");
-styleEl.textContent = ".chip { background: var(--surface-sunken); }";
-document.styleSheets[0].insertRule(".chip { color: var(--accent); }", 0);
-el.innerHTML = '<span style="font-weight: 600">bold, not coloured</span>';
-el.innerHTML = "<span style=\"padding: 2px\">escaped, still no colour</span>";
-caption.textContent = "Colour: tomato";   // a caption, not a stylesheet
+styleEl.textContent = ".chip { background: #d97757; }";
+document.head.appendChild(styleEl);
 </script>
 </body>
 </html>

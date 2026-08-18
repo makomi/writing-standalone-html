@@ -173,10 +173,12 @@ Breaking any of these breaks the point of the project.
    through `var()` — hex, `rgb()`, `hsl()` and named colours alike.
    `scripts/verify.sh` enforces this, in a `<style>` block, in a
    colour-bearing attribute, and in a string a script writes into CSS
-   through `style`, `cssText`, `setProperty` or `setAttribute`. A colour
-   set from JavaScript pins itself to whichever theme was current, and
-   it fails only after a reader interacts. Put the colour in a class and
-   let the script toggle the class.
+   through `style`, `cssText`, `setProperty`, `setAttribute`,
+   `insertRule`, the text of a `<style>` element it builds, or a
+   `style="…"` attribute inside markup it assembles. A colour set from
+   JavaScript pins itself to whichever theme was current, and it fails
+   only after a reader interacts. Put the colour in a class and let the
+   script toggle the class.
 4. **Tier 1 light values are upstream's palette.** Never retune them.
    Contrast problems get fixed in the variants this project added —
    `--clay-deep`, `--olive-deep` for light, `--ink`, `--ink-raised`,
@@ -283,10 +285,18 @@ them.
   regression that widened the scan.
 - **The script-colour check triggers on the sink, not the string.** A
   colour fails when it reaches CSS through `style`, `cssText`,
-  `setProperty` or `setAttribute("style", ...)`. A colour in a data
+  `setProperty`, `setAttribute("style", ...)`, `insertRule`, or the
+  text of a `<style>` element the script builds. The one exception is
+  markup: a `style="…"` attribute inside a string is read wherever it
+  appears, escaped quotes included, because that string becomes an
+  attribute the moment the browser parses it. A colour in a data
   attribute or a label is not a defect. When it fires, put the colour in
   a CSS class and toggle the class — never a `var()` inside the string.
-  `03` and `06` are the worked examples.
+  `03` and `06` are the worked examples. The stylesheet route is found
+  by the name the element is held under, so a `<style>` element in a
+  variable named for something else escapes —
+  `tests/fixtures/bad-script-style-element.html` is the shape it
+  catches.
 - **`data-theme` and `--warn` are settled.** `--warn` resolves to the
   same clay as `--accent` on purpose. Do not add an amber to separate
   them.

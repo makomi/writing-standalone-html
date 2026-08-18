@@ -11,17 +11,6 @@ task comes from here rather than from
 
 ### Medium
 
-**Close the three colour-in-script routes the check misses.**
-`check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
-`setProperty` and `setAttribute("style", ...)`. Three more reach CSS and
-were confirmed to get through on 2026-08-16 — a colour in
-`styleEl.textContent`, in `sheet.insertRule(...)`, and in a `style="…"`
-attribute built inside an `innerHTML` string. Each pins a colour to one
-theme exactly the way the check exists to prevent, and the `innerHTML`
-route is plausible in these templates. Small effort: three patterns
-added to `STYLE_SINK`, plus a fixture per route. No template trips them
-today, so this is closing the rule rather than repairing a breach.
-
 **Stop the drift suite exhausting the API budget.**
 `tests/test_update.sh` invokes `update.sh` five times and each call
 spends two GitHub API calls. Unauthenticated GitHub allows 60 an hour,

@@ -262,11 +262,14 @@ it replaced.
 
 The script check is narrower still. It triggers on the sink, not on the
 string: a colour only fails when it reaches CSS through `style`,
-`cssText`, `setProperty` or `setAttribute("style", ...)`. A colour in a
-data attribute, a label or a chart legend is not a defect. When the
-check fires, do not reach for a token inside the string — put the colour
-in a CSS class and let the script toggle the class. `03` and `06` are
-the worked examples.
+`cssText`, `setProperty`, `setAttribute("style", ...)`, `insertRule`,
+or the text of a `<style>` element the script builds. Markup is the one
+thing read wherever it appears: a `style="…"` attribute inside a string
+is a colour in the cascade as soon as the browser parses that string.
+A colour in a data attribute, a label or a chart legend is not a defect.
+When the check fires, do not reach for a token inside the string — put
+the colour in a CSS class and let the script toggle the class. `03` and
+`06` are the worked examples.
 
 A token-block failure is repaired by `./scripts/stamp.sh <file>`, never
 by editing the block in the template.

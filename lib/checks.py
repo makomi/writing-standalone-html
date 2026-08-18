@@ -84,6 +84,13 @@ COMMENT = re.compile(r"<!--.*?-->", re.S)
 # defect when it reaches the cascade, so the check triggers on the sink
 # rather than on the string: `el.dataset.tint = "#d97757"` is data, and
 # `el.style.color = "#d97757"` pins a colour past the theme switch.
+#
+# The last two entries reach the cascade without touching an element's
+# style: a stylesheet built as the text of a <style> element, and a rule
+# pushed straight into a live sheet. The style-element route is found by
+# the name the element is held under, because nothing else in the source
+# says what `textContent` is being written into — an element named for
+# some other job escapes, and the fixture says so.
 STYLE_SINK = re.compile(
     r"""\.setProperty\s*\(
       | \.setAttribute\s*\(\s*["']style["']
@@ -91,7 +98,9 @@ STYLE_SINK = re.compile(
       | \.style\s*\[[^\]]*\]\s*=(?!=)
       | \.cssText\s*=(?!=)
       | \.style\s*=(?!=)
-      | <style\b""",
+      | <style\b
+      | \.(?:insertRule|addRule)\s*\(
+      | \b[\w$]*style[\w$]*\s*\.\s*(?:textContent|innerText|innerHTML)\s*=(?!=)""",
     re.I | re.X,
 )
 # How far back from a string literal to look for its sink. Long enough
@@ -267,18 +276,35 @@ def _js_literals(src):
             i += 1
 
 
+# A quote escaped inside a JavaScript string is still a quote in the
+# markup that string carries: "<i style=\"color:red\">" builds the same
+# element as its single-quoted spelling. Undo the escape before reading
+# the markup, or the attribute scan sees a backslash where the value
+# should start and matches nothing.
+JS_ESCAPED_QUOTE = re.compile(r"\\([\"'])")
+
+
 def check_no_colour_in_scripts(text):
     """A colour written into CSS from JavaScript is still a raw colour.
 
     The other colour check reads <style> blocks and colour-bearing
-    attributes, which leaves one route open: a string assigned to
-    `style`, `cssText` or `setProperty`. That route pins a colour to
-    whichever theme was current, and it fails only after a reader
-    interacts, which is the worst place for it to fail.
+    attributes, which leaves the script open: a string assigned to
+    `style`, `cssText` or `setProperty`, written as the text of a
+    <style> element, or pushed into a live sheet with `insertRule`.
+    Every one pins a colour to whichever theme was current, and fails
+    only after a reader interacts, which is the worst place to fail.
 
-    Only strings reaching a CSS sink are scanned. A colour in a data
-    attribute, a label or a chart legend is not a defect and is not
-    reported.
+    Markup a script builds is read a second way. A `style="..."`
+    attribute inside a string is a colour in the cascade however the
+    string reaches the page, and it is scanned wherever it appears
+    rather than behind a sink. Its plain spelling is already caught by
+    the file-wide colour check, which reads attributes without caring
+    that this one sits in a script, so a plain one is named twice —
+    noise, not a second defect. The escaped spelling is caught here
+    only, and that is the hole this closes.
+
+    Everything else is left alone. A colour in a data attribute, a
+    label or a chart legend is not a defect and is not reported.
     """
     def blank(match):
         return re.sub(r"[^\n]", " ", match.group(0))
@@ -293,27 +319,37 @@ def check_no_colour_in_scripts(text):
                              stripped, re.S | re.I):
         base, body = block.start(1), block.group(1)
         for start, literal in _js_literals(body):
+            where = at(base + start)
+
             window = body[max(0, start - SINK_WINDOW):start]
             sink = None
             for m in STYLE_SINK.finditer(window):
                 sink = m
             # A `;` `{` or `}` after the sink means the statement that
             # used it has already ended, so this string is unrelated.
-            if sink is None or re.search(r"[;{}]", window[sink.end():]):
-                continue
-            where = at(base + start)
-            for m in HEX.finditer(literal):
-                out.append(f"raw hex {m.group(0)} in a style assignment "
-                           f"at line {where}")
-            for m in COLOR_FN.finditer(literal):
-                name = m.group(0).rstrip("( \t")
-                out.append(f"raw colour {name}(...) in a style assignment "
-                           f"at line {where}")
-            for _, word in _value_words(literal):
-                if word.lower() in NAMED_COLORS:
-                    out.append(f"named colour {word} in a style assignment "
-                               f"at line {where}")
+            if sink is not None and not re.search(r"[;{}]", window[sink.end():]):
+                out += _colours_in(literal, "a style assignment", where)
+
+            markup = JS_ESCAPED_QUOTE.sub(r"\1", literal)
+            for attr in COLOR_ATTR.finditer(markup):
+                out += _colours_in(attr.group("val"),
+                                   "a style attribute this script writes",
+                                   where)
     return sorted(set(out))
+
+
+def _colours_in(chunk, where_kind, line):
+    """Every colour literal in one string, named the way a reader can act on."""
+    out = []
+    for m in HEX.finditer(chunk):
+        out.append(f"raw hex {m.group(0)} in {where_kind} at line {line}")
+    for m in COLOR_FN.finditer(chunk):
+        name = m.group(0).rstrip("( \t")
+        out.append(f"raw colour {name}(...) in {where_kind} at line {line}")
+    for _, word in _value_words(chunk):
+        if word.lower() in NAMED_COLORS:
+            out.append(f"named colour {word} in {where_kind} at line {line}")
+    return out
 
 
 def check_token_block(text):

@@ -31,8 +31,11 @@ measurements — lives in commit bodies. See the changelog rules in
 ### Changed
 
 - `scripts/verify.sh` also fails a template whose script writes a raw
-  colour into CSS through `style`, `cssText`, `setProperty` or
-  `setAttribute`. A colour set that way pins itself to one theme.
+  colour into CSS: through `style`, `cssText`, `setProperty` or
+  `setAttribute`, through `insertRule`, as the text of a `<style>`
+  element the script builds, or inside a `style="…"` attribute in
+  markup it assembles. A colour set any of those ways pins itself to
+  one theme.
 - `scripts/audit-contrast.js` measures text one character long. A diff
   marker, a numbered badge and a separator glyph are each a single
   node, and each is text a reader reads.
