@@ -5,7 +5,7 @@
   source:    02-exploration-visual-designs.html
   blob:      fd1a1fa8bc935a6f3d77aa028ec39666a0f80752
   converted: 2026-08-15
-  notes:     Six judgment calls.
+  notes:     Seven judgment calls.
              (1) Design-option cards collapse from four (A/B/C/D) to
              two, per the file-specific brief note: a comparison needs
              two cards, not one. Kept B (Illustrated) and D
@@ -50,6 +50,14 @@
              2.9:1, and the artboard is a design preview, not a colour
              sample, so the label has to be readable. --clay-deep is
              Tier 1 as well, so the artboard stays theme-invariant.
+             (7) The light artboard's --muted is --gray-700, not
+             upstream's --gray-500. Body text at gray-500 reaches
+             3.5:1 on the ivory stage and 3.7:1 on the white panel,
+             short of the 4.5:1 it needs; gray-700 clears both at
+             10.3:1 and 10.9:1 and still reads lighter than the
+             artboard's slate --fg, which is 18.4:1. Tier 1 either
+             way, so the artboard stays theme-invariant. Same
+             reasoning as (6).
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -373,7 +381,7 @@
        stayed slate, and the headings would vanish.
        ========================================================= */
 
-    .stage        { --fg: var(--slate); --muted: var(--gray-500); --line: var(--gray-300); --panel: var(--white); }
+    .stage        { --fg: var(--slate); --muted: var(--gray-700); --line: var(--gray-300); --panel: var(--white); }
     .stage.dark   { --fg: var(--gray-100); --muted: var(--code-muted); --line: var(--gray-700); --panel: var(--ink-raised); }
 
     /* ---- B · Illustrated ---- */

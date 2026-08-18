@@ -16,9 +16,15 @@
              neutral, flagged, which stays legible in both themes
              without inventing an amber the token file forbids.
              (2) The diff panel is theme-invariant, so its add and del
-             washes and marks take Tier 1 var(--olive) and var(--rust)
-             rather than var(--ok) and var(--danger). The deep variants
-             are tuned for ivory and go muddy on the near-black ground.
+             washes and marks take Tier 1 rather than var(--ok) and
+             var(--danger). The washes stay on var(--olive) and
+             var(--rust) at 15%: they are decoration and carry no
+             contrast floor. The marks are text on the near-black
+             panel, so they take the variants tuned for a dark ground,
+             var(--olive-light) and var(--rust-light) — var(--rust)
+             reaches only 3.4:1 there against 5.4:1 for
+             var(--rust-light). The deep variants are tuned for ivory
+             and go muddy on the near-black ground.
              The hunk row's rgba(255,255,255,0.04) becomes a color-mix
              over var(--white), which is the same value.
              (3) The risk-map highlight wrote
@@ -421,9 +427,9 @@
   .diff-row .code { color: var(--code-text); }
   .diff-row.ctx .code { color: var(--code-muted); }
   .diff-row.add { background: color-mix(in srgb, var(--olive) 15%, transparent); }
-  .diff-row.add .mark { color: var(--olive); }
+  .diff-row.add .mark { color: var(--olive-light); }
   .diff-row.del { background: color-mix(in srgb, var(--rust) 15%, transparent); }
-  .diff-row.del .mark { color: var(--rust); }
+  .diff-row.del .mark { color: var(--rust-light); }
   .diff-row.hunk {
     background: color-mix(in srgb, var(--white) 4%, transparent);
     color: var(--code-muted);

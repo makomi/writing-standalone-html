@@ -32,9 +32,14 @@
              role is a severity level, not a link or emphasis.
              (5) The diff add/del colours (#A3B88A, #E0897A) are extra
              syntax classes inside the theme-invariant code panel, so
-             they take Tier 1 var(--olive) and var(--rust) directly,
-             per the rule's own example of pulling an extra code colour
-             from Tier 1 rather than Tier 2.
+             they take Tier 1 directly, per the rule's own example of
+             pulling an extra code colour from Tier 1 rather than
+             Tier 2. They take the light variants, var(--olive-light)
+             and var(--rust-light), because that panel's ground is
+             always --code-bg: the light variants are the ones tuned
+             for a dark ground, upstream's own two values are light
+             hues, and var(--rust) reaches only 3.4:1 there against
+             5.4:1 for var(--rust-light).
              (6) The action-item checkbox border is an input-like
              affordance, so it takes var(--border-strong), not the
              plain hairline var(--border).
@@ -387,8 +392,8 @@
   }
   .diff-line { white-space: pre; }
   .diff-line.ctx { color: var(--code-muted); }
-  .diff-line.del { color: var(--rust); }
-  .diff-line.add { color: var(--olive); }
+  .diff-line.del { color: var(--rust-light); }
+  .diff-line.add { color: var(--olive-light); }
 
   /* ---------- Impact table ---------- */
   table.impact {

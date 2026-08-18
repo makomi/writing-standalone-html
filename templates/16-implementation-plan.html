@@ -14,13 +14,15 @@
              it is the page's primary navigation marker and needs to
              read apart from a plain sunken panel.
              (2) .comment .avatar.alt and .composer .send keep Tier 1
-             --olive / --clay directly instead of --ok / --accent.
-             Both are solid fills carrying a white glyph on top (avatar
-             initials, a button label); the dark-theme light variants
-             are tuned for text legibility on a dark ground, not as
-             fills behind white, and would collapse contrast there.
-             Same precedent as 17-pr-writeup's .focus .n and
-             .test.done .check.
+             --olive-deep / --clay-deep directly instead of --ok /
+             --accent. Both are solid fills carrying a white glyph on
+             top (avatar initials, a button label), so the fill has to
+             be dark enough for white to read on it: upstream's --olive
+             and --clay reach 3.7:1 and 3.1:1, the deep variants 5.4:1
+             each. The dark-theme light variants are tuned for text on
+             a dark ground, not as fills behind white, and would
+             collapse contrast further. Tier 1 either way, so both
+             stay theme-invariant.
              (3) .comment .avatar (plain) and .digest .mini-av map oat
              to --surface-sunken under the default palette rule — no
              code block shares either view, so nothing needs the oat
@@ -420,7 +422,7 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 600; color: var(--text);
     }
-    .comment .avatar.alt { background: var(--olive); color: var(--white); }
+    .comment .avatar.alt { background: var(--olive-deep); color: var(--white); }
     .comment .bubble { flex: 1; }
     .comment .author { font-size: 12px; font-weight: 600; color: var(--text); }
     .comment .author .time { font-weight: 400; color: var(--text-muted); margin-left: 6px; }
@@ -441,7 +443,7 @@
       background: var(--surface);
     }
     .composer .send {
-      background: var(--clay);
+      background: var(--clay-deep);
       color: var(--white);
       border-radius: var(--radius-row);
       padding: 8px 14px;

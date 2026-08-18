@@ -11,29 +11,33 @@ task comes from here rather than from
 
 ### Medium
 
-**Raise the fixed fills that fail AA.** Found by
-`scripts/audit-contrast.js` on 2026-08-16 and re-measured on
-2026-08-17, each identical in both themes because each is Tier 1 on
-Tier 1:
+**Teach `scripts/audit-contrast.js` to see one-character text.** Its
+node filter is `n.textContent.trim().length > 1`, so an element whose
+entire text is a single character is never measured. That hid two real
+AA failures until 2026-08-18: the diff marker `-` in
+`03-code-review-pr.html` at 3.42 and the focus-item number `1` in
+`17-pr-writeup.html` at 3.12, both fixed in the change that found them.
+Nothing documents why the bound is 1 rather than 0, and `.trim()`
+already drops whitespace-only nodes, which is all `> 0` needs to skip.
 
-| Where | Pair | Ratio | Nodes |
-|---|---|---|---|
-| `16` Post button | `--white` on `--clay` | 3.12 | 1 |
-| `12` deleted diff line | `--rust` on `--code-bg` | 3.42 | 1 |
-| `02` empty-state body | `--gray-500` on `--ivory` | 3.47 | 1 |
-| `02` step detail | `--gray-500` on `--white` | 3.65 | 3 |
-| `16` second avatar | `--white` on `--olive` | 3.68 | 1 |
+Lowering the bound is not enough on its own. A sweep of all twenty
+templates in both themes on 2026-08-18, with the bound at `> 0`,
+reports eight further nodes and none is a defect: three `span.dot`
+middots per theme in `18-editor-triage-board.html` and one `span.sep`
+middot per theme in `19-editor-feature-flags.html`, between 1.45 and
+1.60. They are decorative separators between metadata items, and
+raising a delimiter to 4.5:1 would make it as loud as the text it
+delimits.
 
-`02` carries two grounds, not one: fixing the ivory node leaves three
-white ones reported. Seven nodes in five pairings.
-
-`02` already solved this shape once: header note (6) moved the primary
-button to `--clay-deep` for exactly this reason, and recorded that the
-artboard stays theme-invariant because `--clay-deep` is Tier 1 too. The
-same move fixes the `16` button. The rest need a decision rather than a
-substitution, which is what holds this at Medium: a fill that is Tier 1
-on Tier 1 cannot be repaired by darkening a variant the way `--accent`
-and `--ok` were.
+So the rule has to keep the `-` and drop the `·`, and "skip
+punctuation" is not that rule — the diff marker is punctuation and
+carries meaning. A second question sits in the same place: those
+middots take `--border`, documented as a decorative hairline, as a text
+colour. If they are decoration the audit should skip them; if they are
+text the token is wrong. One answer settles both. Medium because the
+two real failures are already fixed and what is left is stopping the
+next one from hiding. Worth deciding alongside the task below, since
+whatever rule is chosen is what that suite should pin.
 
 **Put `scripts/audit-contrast.js` under test.** Nothing in
 `tests/` exercises it. Its ground rule changed on 2026-08-17 — an

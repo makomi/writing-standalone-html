@@ -29,6 +29,14 @@ measurements — lives in commit bodies. See the changelog rules in
 
 ### Fixed
 
+- Text on a solid fill clears WCAG AA in five templates. Each place sat
+  between 3.1:1 and 3.7:1 where body text needs 4.5:1: the Post button
+  and the second avatar in `16-implementation-plan.html`, the
+  focus-item number in `17-pr-writeup.html`, the diff marks in
+  `03-code-review-pr.html` and `12-incident-report.html`, and the muted
+  text in the light artboard of `02-exploration-visual-designs.html`.
+  Each now takes the deep or light variant the token file already
+  carries for that ground, so every one stays theme-invariant.
 - `scripts/audit-contrast.js` measures a text node against the ground
   it is painted on, not against any ancestor that happens to paint one.
   A label positioned clear of its parent was reported against a fill it

@@ -36,8 +36,13 @@
              white glyph on top. Tier 2 --accent/--ok would swap in the
              dark-theme light variants (tuned for text legibility on a
              dark ground, not as a fill behind white), which would
-             collapse contrast in dark mode. Kept on Tier 1 --clay /
-             --olive directly, theme-invariant by choice.
+             collapse contrast in dark mode. Both stay on Tier 1,
+             theme-invariant by choice. They part on which floor
+             applies: .focus .n carries a numeral, which is text and
+             needs 4.5:1, so it takes --clay-deep at 5.4:1 — white on
+             --clay reaches only 3.1:1. .test.done .check is a drawn
+             checkmark, not text, so the 3:1 floor for a graphic
+             applies and --olive holds it at 3.7:1.
              (6) Corner radii of 10px (.code, .focus .item, .tests
              .test), 5px (.test .check) and 6px (.badge) match no shape
              token and are left as literals, per the rules.
@@ -441,7 +446,7 @@
       font-size: 13px;
       font-weight: 600;
       color: var(--white);
-      background: var(--clay);
+      background: var(--clay-deep);
       width: 26px; height: 26px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
