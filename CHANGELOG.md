@@ -26,9 +26,18 @@ measurements — lives in commit bodies. See the changelog rules in
 - `scripts/verify.sh` also fails a template whose script writes a raw
   colour into CSS through `style`, `cssText`, `setProperty` or
   `setAttribute`. A colour set that way pins itself to one theme.
+- `scripts/audit-contrast.js` measures text one character long. A diff
+  marker, a numbered badge and a separator glyph are each a single
+  node, and each is text a reader reads.
 
 ### Fixed
 
+- The middot separators in `18-editor-triage-board.html` and
+  `19-editor-feature-flags.html` are legible. They are text, and they
+  took `--border`, a decorative hairline with no contrast floor, which
+  left them between 1.45:1 and 1.60:1 where text needs 4.5:1. Both now
+  take `--text-muted`, the token for the metadata line they
+  punctuate.
 - Text on a solid fill clears WCAG AA in five templates. Each place sat
   between 3.1:1 and 3.7:1 where body text needs 4.5:1: the Post button
   and the second avatar in `16-implementation-plan.html`, the

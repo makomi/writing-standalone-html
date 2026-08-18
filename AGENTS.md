@@ -88,10 +88,10 @@ on the page and reports what fails WCAG AA. It found the `02` defect
 that eleven screenshots had not. Set the viewport to 1280x900, load the
 page, then evaluate the script's source in it. The result is the
 findings as JSON; `[]` is a pass for everything it looks at, which is
-not everything on the page. Its node filter skips any element whose
-whole text is a single character, so a diff marker or a numbered badge
-is invisible to it — that hid two real AA failures until 2026-08-18.
-`TASKS.md` carries what lowering the bound would cost.
+not everything on the page. One character counts as text: a diff
+marker, a focus-item number and a middot separator are each a single
+node, and the first two were real AA failures that an earlier `> 1`
+bound hid until 2026-08-18.
 
 It is an audit aid, not a suite member: it needs a browser, and a
 browser must not become a dependency of `tests/run-all.sh`.

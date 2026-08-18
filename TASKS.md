@@ -11,34 +11,6 @@ task comes from here rather than from
 
 ### Medium
 
-**Teach `scripts/audit-contrast.js` to see one-character text.** Its
-node filter is `n.textContent.trim().length > 1`, so an element whose
-entire text is a single character is never measured. That hid two real
-AA failures until 2026-08-18: the diff marker `-` in
-`03-code-review-pr.html` at 3.42 and the focus-item number `1` in
-`17-pr-writeup.html` at 3.12, both fixed in the change that found them.
-Nothing documents why the bound is 1 rather than 0, and `.trim()`
-already drops whitespace-only nodes, which is all `> 0` needs to skip.
-
-Lowering the bound is not enough on its own. A sweep of all twenty
-templates in both themes on 2026-08-18, with the bound at `> 0`,
-reports eight further nodes and none is a defect: three `span.dot`
-middots per theme in `18-editor-triage-board.html` and one `span.sep`
-middot per theme in `19-editor-feature-flags.html`, between 1.45 and
-1.60. They are decorative separators between metadata items, and
-raising a delimiter to 4.5:1 would make it as loud as the text it
-delimits.
-
-So the rule has to keep the `-` and drop the `·`, and "skip
-punctuation" is not that rule — the diff marker is punctuation and
-carries meaning. A second question sits in the same place: those
-middots take `--border`, documented as a decorative hairline, as a text
-colour. If they are decoration the audit should skip them; if they are
-text the token is wrong. One answer settles both. Medium because the
-two real failures are already fixed and what is left is stopping the
-next one from hiding. Worth deciding alongside the task below, since
-whatever rule is chosen is what that suite should pin.
-
 **Put `scripts/audit-contrast.js` under test.** Nothing in
 `tests/` exercises it. Its ground rule changed on 2026-08-17 — an
 ancestor counts only if it contains the text box, and a straddling
@@ -50,27 +22,34 @@ theme review depends on. Medium effort: lift the pure helpers
 can import, and add a suite that skips when node is absent, the way
 `test_js_syntax.py` does. No browser, so `run-all.sh` keeps its rule
 that a browser is never a dependency. The cases worth pinning are the
-three the fix turned on: contained, straddling, and no painted
-ancestor at all.
+three the ground fix turned on — contained, straddling, and no painted
+ancestor at all — and the node filter, which counts a one-character
+node as text since 2026-08-18.
 
-**Batch the contrast sweep into one browser session.**
-`scripts/audit-contrast.js` audits whichever page is loaded, so a
-repo-wide sweep costs one browser launch per template per theme: forty
-launches at roughly twelve seconds each, eight minutes for twenty
-templates in light and dark. Measured on 2026-08-18.
+**Ship the batched contrast sweep as a script.** A repo-wide sweep
+costs one browser launch per template per theme when each page is
+driven by hand: forty launches at roughly twelve seconds each, eight
+minutes for twenty templates in light and dark, measured on
+2026-08-18. Chaining all twenty pages into one `browse-once` session
+takes 13 seconds per theme, measured on 2026-08-18 with a throwaway
+driver that is now gone.
 
 The eight minutes is not the cost that matters — what matters is that a
 sweep that expensive gets run rarely and selectively. That is how the
 two one-character failures in `03-code-review-pr.html` and
 `17-pr-writeup.html` survived both the 2026-08-16 sweep and the
-2026-08-17 re-measurement. A one-minute sweep gets run after every
+2026-08-17 re-measurement. A half-minute sweep gets run after every
 template edit.
 
-Low effort: a wrapper that navigates, evaluates and collects per page
-inside a single session instead of relaunching. Leave the script itself
-alone so it stays usable against one page by hand, and prove the
-batched numbers match the per-page ones on the five templates with
-known ratios. It stays an audit aid either way — a browser must not
+Low effort, and the shape is known: navigate, evaluate and collect per
+page inside a single session, writing the dark copies to `$TMPDIR`.
+Leave `audit-contrast.js` itself alone so it stays usable against one
+page by hand. The batched and per-page numbers were confirmed to agree
+on `18-editor-triage-board.html` and `19-editor-feature-flags.html`;
+confirm the rest before trusting a batched clean run. The concrete
+browser invocation is machine-local, so whatever ships has to take the
+driver from `.claude/browsing.md` or an argument, not hard-code one —
+decision 0008. It stays an audit aid either way: a browser must not
 become a dependency of `tests/run-all.sh`.
 
 **Close the three colour-in-script routes the check misses.**

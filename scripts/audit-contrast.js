@@ -102,9 +102,14 @@
 
   var found = [];
 
+  /* One character is text. A diff marker, a focus-item number and a
+     middot separator are all single-character nodes, and the first two
+     were real AA failures that a `> 1` bound hid until 2026-08-18.
+     `.trim()` already drops the whitespace-only nodes, which is the
+     only thing this bound has to skip. */
   document.querySelectorAll("*").forEach(function (el) {
     var ownText = Array.from(el.childNodes).some(function (n) {
-      return n.nodeType === 3 && n.textContent.trim().length > 1;
+      return n.nodeType === 3 && n.textContent.trim().length > 0;
     });
     if (!ownText) return;
 

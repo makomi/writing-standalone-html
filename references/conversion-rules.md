@@ -68,6 +68,14 @@ Two values share `var(--text-muted)`: upstream uses `#3d3d3a` and
 intentional. If one view genuinely needs two muted levels, that is an
 escalation — record it in the header notes.
 
+A divider drawn as a character is text, not a rule. Upstream paints the
+middot separators in `18-editor-triage-board.html` and
+`19-editor-feature-flags.html` with `#d1cfc5`; they take
+`var(--text-muted)` here, because `var(--border)` is a decorative
+hairline with no contrast floor and a glyph the reader reads has one.
+Look at what paints the pixel — a `border`, `background` or `stroke`
+takes the border token, a `color` does not.
+
 `#e3dacc` maps to `var(--surface-sunken)` because no tint role exists.
 If an oat band must stay visually distinct from a code block in the
 same view, use Tier 1 `var(--oat)` and note that the element is
