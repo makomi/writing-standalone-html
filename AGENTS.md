@@ -223,6 +223,10 @@ python3 tests/test_js_syntax.py     # every inline script parses
 python3 tests/test_audit_contrast.py  # the contrast audit's own rules
 ./tests/test_update.sh              # drift classification and exit codes
 
+# The drift suite's canned API. Useful on its own to run any command
+# against a chosen upstream state, at no cost to the API budget:
+python3 tests/stub_github.py drifted -- ./scripts/update.sh
+
 # This one reads upstream sources, so bracket it:
 ./scripts/upstream.sh fetch && python3 tests/test_conversion_rules.py; \
   rc=$?; ./scripts/upstream.sh clean; exit $rc
@@ -231,13 +235,27 @@ python3 tests/test_audit_contrast.py  # the contrast audit's own rules
 Three suites skip rather than fail when they cannot run, and the runner
 reports a skip as a skip rather than a pass. `test_js_syntax.py` and
 `test_audit_contrast.py` skip when `node` is absent — node is not a
-dependency and must not become one. `test_update.sh` skips when the GitHub API is unreachable, because
-an outage reported as a code failure is the exact confusion `update.sh`
-has a distinct exit 2 to prevent.
+dependency and must not become one. In `test_update.sh` only the final
+live check skips when the GitHub API is unreachable, because an outage
+reported as a code failure is the exact confusion `update.sh` has a
+distinct exit 2 to prevent. Its other assertions run against
+`tests/stub_github.py` and do not skip, so drift classification is
+exercised with no network at all.
 
-Watch the API budget: `test_update.sh` spends about ten calls, and
-unauthenticated GitHub allows 60 an hour. Six full runs exhaust it. Set
-`GITHUB_TOKEN` when iterating.
+The API budget is why the suite has that shape. Unauthenticated GitHub
+allows 60 calls an hour. Until 2026-08-18 `test_update.sh` invoked
+`update.sh` six times for about eleven calls, so six suite runs emptied
+the budget; the suite then skipped in full and `run-all.sh` reported
+green with drift detection never exercised. Worse, a budget that ran
+out mid-suite read as a failure on one run and as a skip on the next,
+from the same state. It now spends two calls — one live `update.sh`, as
+the integration check that github.com still answers in the shape
+`lib/github.py` reads.
+
+Every run says what it spent: `update.sh` prints
+`spent 2 API call(s), 58 of 60 left this hour`, read free from the
+`X-RateLimit-*` response headers. A near-empty budget is visible before
+it becomes an exit 2. Set `GITHUB_TOKEN` to raise the ceiling.
 
 Do not add a dependency, a package manager, or a virtualenv. The repo
 must stay installable by copying a directory. This overrides the

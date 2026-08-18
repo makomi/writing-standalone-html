@@ -11,19 +11,6 @@ task comes from here rather than from
 
 ### Medium
 
-**Stop the drift suite exhausting the API budget.**
-`tests/test_update.sh` invokes `update.sh` five times and each call
-spends two GitHub API calls. Unauthenticated GitHub allows 60 an hour,
-so six full suite runs exhaust it — and the suite then reports green
-with drift detection skipped, which is a green run hiding an unexercised
-suite. That happened on 2026-08-16. Running out mid-suite is worse
-again: on 2026-08-18 a run exhausted the budget partway and `run-all.sh`
-reported the suite as failed, where the next run — with the whole budget
-already gone — reported the same state as a skip. Small to medium
-effort: fetch the tree once per run and reuse it, or point four of the
-five assertions at a stub and keep one live call as the integration
-check.
-
 **Confirm or withdraw the symlink install route.** `README.md` and
 decision `0005` both offer
 `ln -s <repo> ~/.claude/skills/writing-standalone-html` and both label

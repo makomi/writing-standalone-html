@@ -14,12 +14,42 @@ import urllib.request
 BASE = os.environ.get("GITHUB_API_BASE",
                       "https://api.github.com/repos/anthropics/html-effectiveness")
 
+# What this process has spent, so a caller can report it. Unauthenticated
+# GitHub allows 60 calls an hour, which is a budget rather than a wall:
+# running out mid-run reports as exit 2, and a reader who cannot see the
+# spend cannot tell that from an outage.
+REQUESTS = []
+
+# GitHub sends the remaining allowance on every response, so reading it
+# costs nothing. None means no response carried the header -- a stub or
+# an Enterprise host may omit it -- and is reported as unknown, never as
+# zero.
+rate_remaining_or_none = None
+rate_limit_or_none = None
+
 
 class UpstreamUnavailable(Exception):
     """The check could not run. Distinct from 'upstream drifted'."""
 
 
+def budget_note():
+    """One line on what this process spent and what is left."""
+    spent = f"spent {len(REQUESTS)} API call(s)"
+    if rate_remaining_or_none is None:
+        return spent
+    return f"{spent}, {rate_remaining_or_none} of {rate_limit_or_none} left this hour"
+
+
+def _record_rate(headers):
+    global rate_remaining_or_none, rate_limit_or_none
+    remaining = headers.get("X-RateLimit-Remaining")
+    if remaining is not None:
+        rate_remaining_or_none = int(remaining)
+        rate_limit_or_none = int(headers["X-RateLimit-Limit"])
+
+
 def _get(url):
+    REQUESTS.append(url)
     req = urllib.request.Request(url, headers={
         "Accept": "application/vnd.github+json",
         "User-Agent": "writing-standalone-html-update",
@@ -29,8 +59,10 @@ def _get(url):
         req.add_header("Authorization", f"Bearer {token}")
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
+            _record_rate(resp.headers)
             return json.load(resp)
     except urllib.error.HTTPError as exc:
+        _record_rate(exc.headers)
         if exc.code == 403 and "rate limit" in exc.read().decode(errors="replace").lower():
             raise UpstreamUnavailable(
                 "GitHub rate limit reached; set GITHUB_TOKEN or wait"

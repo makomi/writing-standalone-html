@@ -124,6 +124,11 @@ is work to do, `2` means the check itself could not run — no network, a
 rate limit, a malformed response. A wrapper that conflates them would
 read an outage as a clean result.
 
+A run costs two GitHub API calls and reports them, together with what
+the hour has left: `spent 2 API call(s), 58 of 60 left this hour`.
+Unauthenticated GitHub allows 60 an hour; set `GITHUB_TOKEN` to raise
+the ceiling.
+
 Conversion stays manual, because it needs judgment a script cannot
 supply: which instance is representative, where a repeat boundary falls,
 and which semantic role a given color plays. It also needs file

@@ -22,6 +22,7 @@ try:
     upstream = G.tree_blobs(commit)
 except G.UpstreamUnavailable as exc:
     print(f"update: cannot check upstream: {exc}", file=sys.stderr)
+    print(f"update: {G.budget_note()}", file=sys.stderr)
     sys.exit(2)
 
 if not upstream:
@@ -30,6 +31,7 @@ if not upstream:
     sys.exit(2)
 
 print(f"update: upstream HEAD is {commit[:7]} ({len(upstream)} files)")
+print(f"update: {G.budget_note()}")
 
 result = M.compare(M.load("templates/MANIFEST.json"), upstream)
 

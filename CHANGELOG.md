@@ -39,6 +39,11 @@ measurements — lives in commit bodies. See the changelog rules in
 - `scripts/audit-contrast.js` measures text one character long. A diff
   marker, a numbered badge and a separator glyph are each a single
   node, and each is text a reader reads.
+- `scripts/update.sh` reports what a run costs and what the hour has
+  left — `spent 2 API call(s), 58 of 60 left this hour` — read from the
+  response headers at no extra call. Unauthenticated GitHub allows 60
+  an hour, and a budget close to empty is now visible before it turns
+  into an exit 2.
 
 ### Fixed
 
