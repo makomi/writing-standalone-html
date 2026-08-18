@@ -25,7 +25,7 @@ passes.
 | `scripts/audit-contrast.js` | Built — WCAG audit of a rendered page, run in a browser |
 | `scripts/sweep-contrast.sh` | Built — that audit over every template in both themes, one browser session per theme |
 | `templates/MANIFEST.json` | Built — 20 records, pinned at `58c305b` |
-| `lib/`, `tests/` | Built — 7 test suites, all green via `tests/run-all.sh` |
+| `lib/`, `tests/` | Built — 8 test suites, all green via `tests/run-all.sh` |
 | `templates/` | 20 of 20 converted |
 | `SKILL.md` | Built — the trigger surface and the genre selection table |
 

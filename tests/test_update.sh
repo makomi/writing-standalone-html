@@ -9,7 +9,9 @@
 #
 # The live call stays because a stub cannot tell you that github.com
 # still answers in the shape lib/github.py reads. It is the last block,
-# and only it skips when the network is gone.
+# and only it skips when the network is gone. That case prints PARTIAL,
+# not SKIP: the suite ran, and run-all.sh reports the named gap rather
+# than calling eleven assertions skipped.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fail=0
@@ -120,10 +122,10 @@ echo
 live=$(./scripts/update.sh 2>&1)
 rc=$?
 if [ $rc -eq 2 ]; then
-  echo "SKIP: the live GitHub check did not run, so the response shape"
-  echo "      was not verified. Every stub assertion above ran and its"
-  echo "      result stands. update.sh said:"
-  printf '%s\n' "$live" | sed 's/^/      /' 
+  echo "PARTIAL: the live GitHub check did not run, so the response"
+  echo "         shape was not verified. Every stub assertion above ran"
+  echo "         and its result stands. update.sh said:"
+  printf '%s\n' "$live" | sed 's/^/         /'
 else
   live_calls=2
   if printf '%s' "$live" | grep -q "spent 2 API call(s)"; then

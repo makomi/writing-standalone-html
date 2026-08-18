@@ -15,11 +15,37 @@ cd "$(dirname "$0")/.."
 
 failed=()
 skipped=()
+gapped=()
 started=$(date +%s)
 
-# A suite that could not run reports SKIP and exits 0 -- no node, no
-# network. That is not a pass, and saying "pass" would hide the gap, so
-# it is counted and named separately.
+# classify <rc> <output> -- the verdict for one suite, echoed as
+# fail | gap | skip | pass.
+#
+# A suite reports what it could not do, because only the suite knows.
+# Two trailers say it, and they mean different things:
+#
+#   SKIP     nothing ran. No node, no network. Not a pass -- saying
+#            "pass" would hide the whole suite.
+#   PARTIAL  the suite ran and names a gap. Its other assertions hold.
+#
+# PARTIAL is checked first, and that order is the point of the
+# distinction. A suite prints SKIP from whichever block could not run,
+# so a suite with one skipped block among ten that ran emits a SKIP
+# line; reading that as "skipped" understates the coverage a person
+# then trusts. A suite that names a gap ran.
+classify() {
+  local rc="$1" out="$2"
+  if [ "$rc" -ne 0 ]; then
+    echo fail
+  elif printf '%s' "$out" | grep -q "^PARTIAL"; then
+    echo gap
+  elif printf '%s' "$out" | grep -q "^SKIP"; then
+    echo skip
+  else
+    echo pass
+  fi
+}
+
 run() {
   local label="$1"; shift
   echo
@@ -27,22 +53,24 @@ run() {
   local out rc
   out=$("$@" 2>&1); rc=$?
   printf '%s\n' "$out"
-  if [ $rc -ne 0 ]; then
-    echo "--- $label: FAIL"
-    failed+=("$label")
-  elif printf '%s' "$out" | grep -q "^SKIP"; then
-    echo "--- $label: skipped"
-    skipped+=("$label")
-  else
-    echo "--- $label: pass"
-  fi
+  case "$(classify "$rc" "$out")" in
+    fail) echo "--- $label: FAIL";              failed+=("$label") ;;
+    gap)  echo "--- $label: pass, with a gap";  gapped+=("$label") ;;
+    skip) echo "--- $label: skipped";           skipped+=("$label") ;;
+    *)    echo "--- $label: pass" ;;
+  esac
 }
+
+# tests/test_run_all.sh sources this file to call classify() on its own.
+# Everything above is a definition; everything below runs a suite.
+[ "${RUN_ALL_DEFINE_ONLY:-no}" = yes ] && return 0
 
 run "checker fixtures"        ./tests/test_verify.sh
 run "token roles and contrast" python3 tests/test_tokens.py
 run "inline script syntax"    python3 tests/test_js_syntax.py
 run "contrast audit rules"    python3 tests/test_audit_contrast.py
 run "upstream borrow"         ./tests/test_upstream.sh
+run "the runner's verdicts"   ./tests/test_run_all.sh
 
 echo
 echo "=== conversion rules (needs the clone)"
@@ -80,8 +108,11 @@ fi
 
 elapsed=$(( $(date +%s) - started ))
 note=""
+if [ ${#gapped[@]} -gt 0 ]; then
+  note=", ${#gapped[@]} with a named gap: ${gapped[*]}"
+fi
 if [ ${#skipped[@]} -gt 0 ]; then
-  note=", ${#skipped[@]} skipped: ${skipped[*]}"
+  note="$note, ${#skipped[@]} skipped: ${skipped[*]}"
 fi
 if [ ${#failed[@]} -eq 0 ]; then
   echo "run-all: every suite passed in ${elapsed}s${note}"

@@ -222,6 +222,7 @@ python3 tests/test_tokens.py        # token roles and WCAG contrast
 python3 tests/test_js_syntax.py     # every inline script parses
 python3 tests/test_audit_contrast.py  # the contrast audit's own rules
 ./tests/test_update.sh              # drift classification and exit codes
+./tests/test_run_all.sh             # the verdict run-all.sh gives a suite
 
 # The drift suite's canned API. Useful on its own to run any command
 # against a chosen upstream state, at no cost to the API budget:
@@ -232,19 +233,41 @@ python3 tests/stub_github.py drifted -- ./scripts/update.sh
   rc=$?; ./scripts/upstream.sh clean; exit $rc
 ```
 
-A suite that cannot run reports a skip rather than a pass, and the
-runner reports a skip as a skip. `test_js_syntax.py` and
-`test_audit_contrast.py` skip in full when `node` is absent — node is
-not a dependency and must not become one.
+A suite reports what it could not do, because only the suite knows.
+Two trailers say it, both read at the start of a line by
+`classify()` in `run-all.sh`:
 
-`test_update.sh` is the partial case. Only its final live check skips
-when the GitHub API is unreachable, because an outage reported as a
-code failure is the exact confusion `update.sh` has a distinct exit 2
-to prevent. Its other assertions run against `tests/stub_github.py` and
-do not skip, so drift classification is exercised with no network at
-all. `run-all.sh` still labels the whole suite "skipped", because its
-only signal is a `SKIP` line in the output — read the body to see what
-actually ran.
+| Trailer | Means | Runner says |
+|---|---|---|
+| `SKIP` | nothing ran | `skipped` |
+| `PARTIAL` | the suite ran and names a gap | `pass, with a gap` |
+
+Neither is a plain pass, and the summary line names both counts.
+`PARTIAL` is tested first: a suite prints `SKIP` from whichever block
+could not run, so one skipped block among ten that ran would otherwise
+read as a suite that never ran. Use a new trailer only at the start of
+a line — prose naming either word is still a pass.
+
+`test_js_syntax.py` and `test_audit_contrast.py` skip in full when
+`node` is absent — node is not a dependency and must not become one.
+
+`test_update.sh` is the partial case, and the reason `PARTIAL` exists.
+Only its final live check skips when the GitHub API is unreachable,
+because an outage reported as a code failure is the exact confusion
+`update.sh` has a distinct exit 2 to prevent. Its other eleven
+assertions run against `tests/stub_github.py` and do not skip, so drift
+classification is exercised with no network at all.
+
+`tests/test_run_all.sh` holds the runner to this. It sources
+`run-all.sh` with `RUN_ALL_DEFINE_ONLY=yes`, which returns after the
+definitions, then calls `classify()` on each case; its last assertion
+drives `test_update.sh` at a refused port so the trailer and the
+verdict are checked against each other. To see the gap path over a
+whole run:
+
+```bash
+GITHUB_API_BASE="http://127.0.0.1:1/repos/nobody/nothing" ./tests/run-all.sh
+```
 
 The API budget is why the suite has that shape. Unauthenticated GitHub
 allows 60 calls an hour. Until 2026-08-18 `test_update.sh` invoked

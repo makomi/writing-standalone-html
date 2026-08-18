@@ -21,20 +21,6 @@ were tried on 2026-08-19 and all three are closed; `AGENTS.md`, under
 "Installing after a change", records which and what is already known,
 so the next session does not spend itself rediscovering them.
 
-**Stop `run-all.sh` reporting a partly-skipped suite as fully skipped.**
-Its only signal is a `SKIP` line in a suite's output, so
-`test_update.sh` — which runs eleven stub assertions and skips only its
-final live GitHub check — reports as `drift detection: skipped`. That
-understates coverage in exactly the way the API-budget task was filed
-to stop: a reader trusting the summary line believes drift detection
-never ran, when all of the classification did. Sits at Medium because
-the summary line is what a person reads, and it is wrong in the safe
-direction only by accident. Small effort, with a wrinkle: a suite needs
-a way to report "ran, with a named gap" — a machine-readable trailer,
-or the runner counting `SKIP` lines against `ok:` lines — and
-`run-all.sh` has no suite of its own, so the change needs a way to
-prove itself.
-
 ### Low
 
 **Test the rate-limit path that turns an exhausted budget into exit 2.**
@@ -88,8 +74,9 @@ effort: one line each, counted from what is already there.
 
 **Route the conversion-rules suite through `run()` in `run-all.sh`.**
 That one block is written out longhand instead of using the runner's
-`run()` helper, so it duplicates the pass and fail logic and cannot
-report a skip. Nothing is wrong today, because that suite never skips —
+`run()` helper, so it duplicates the pass and fail logic and never
+reaches `classify()` — it can report neither a skip nor a named gap.
+Nothing is wrong today, because that suite does neither:
 `run-all.sh` always fetches the clone for it first. It becomes a real
 defect the moment the suite learns to skip, because the runner would
 call the skip a pass. Small effort: give `run()` an optional setup and
