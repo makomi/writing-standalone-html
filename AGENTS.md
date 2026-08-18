@@ -12,7 +12,7 @@ tooling that keeps them synchronized with upstream
 Read before changing anything:
 
 1. `docs/specs/2026-08-14-writing-standalone-html-design.md` — the design
-2. `docs/decisions/` — seven decision records with the alternatives rejected
+2. `docs/decisions/` — eight decision records with the alternatives rejected
 3. `docs/plans/2026-08-14-writing-standalone-html.md` — the ten-task build
 4. `TASKS.md` — the open backlog, and where the next task comes from
 
@@ -26,36 +26,25 @@ keeps its checkboxes as a record of what was built and what was skipped.
 
 ## Browsing and the theme check
 
-The theme and interaction checks need a rendered page. Drive the browser
-with `browse-once`, which runs a whole gstack session inside one shell
-call:
+Two checks need a rendered page, and `scripts/verify.sh` makes neither:
+whether a template holds up in dark theme, and whether its retained
+interaction still works. Both need a browser.
 
-```bash
-~/.claude/bin/browse-once/browse-once \
-  goto "file://$PWD/templates/11-status-report.html" \
-  -- screenshot "$TMPDIR/shot.png"
-```
+**What the step needs.** Any headless browser you can drive from a
+shell, provided it can do five things: load a `file://` URL, set the
+viewport, evaluate JavaScript in the page and hand back the result,
+capture a screenshot, and send a key press. Playwright, Puppeteer and a
+bare Chrome DevTools Protocol client all qualify.
 
-Commands chain with a literal `--`, so one call can navigate, click and
-screenshot. `browse-once --help`-style usage is in its own README next
-to the binary.
+The concrete invocation is machine-local, so this repo does not carry
+one. If `.claude/browsing.md` exists, it holds the commands for this
+machine. That path is git-ignored, so a fresh clone has none: write the
+equivalent for whatever driver you have before running either check.
+Everything below is stated in terms of the five capabilities, not a
+command line. Decision 0008 records why.
 
-Three rules, each of which costs a hang or a crash to learn:
-
-- **Never call `browse` directly, and never the
-  `mcp__claude-in-chrome__*` tools.** gstack's `browse` expects a
-  long-lived daemon, and the daemon cannot survive across Bash calls
-  here: every call gets its own PID and network namespace, so the next
-  call reads the state file, tries a dead port and blocks.
-- **Never launch chromium yourself.** A bare `chromium --headless` is
-  denied `socket()` and dumps core before rendering.
-- **Use `$TMPDIR`, not `/tmp`.** Writes to `/tmp` are refused.
-
-If the gstack skills are missing, build them:
-`cd .claude/skills/gstack && ./setup`.
-
-To check a theme, copy the template and set the attribute on the root
-element — templates ship without one, so they follow the reader's system
+**Set the theme on a copy, not the template.** Templates ship without
+`data-theme` on the root element, so they follow the reader's system
 setting and a headless browser gives you light:
 
 ```bash
@@ -71,42 +60,37 @@ the media query.
 downscaled screenshot will both lie to you. Two findings from the
 2026-08-16 sweep — inverted delta colours in `09`, light legend chips
 in `13` — were false alarms that `getComputedStyle` disproved in one
-call. Ask the page:
+call. Load the dark copy and ask the page:
 
-```bash
-~/.claude/bin/browse-once/browse-once \
-  goto "file://$TMPDIR/dark.html" \
-  -- js "getComputedStyle(document.querySelector('.chip')).backgroundColor"
+```js
+getComputedStyle(document.querySelector('.chip')).backgroundColor
 ```
 
-Two traps around that: a colour under a CSS `transition` reads as the
+Two traps around that. A colour under a CSS `transition` reads as the
 value it is passing through, so let one settle before believing it
-(`19`'s toggle track takes 160ms); and `browse chain` prints nothing at
-all when a step fails, so a mistyped selector loses the whole run's
-output, not just its own.
+(`19`'s toggle track takes 160ms). And a driver that chains steps into
+one call may print nothing at all when a step fails, which loses the
+whole run's output to a mistyped selector rather than just that step's —
+find out which kind yours is before trusting an empty result.
 
-A page taller than the viewport needs more than one shot: a full-page
-`screenshot` is capped at 2000px and scaled down, which costs the
-legibility the check depends on. Scroll in viewport-sized steps
-instead. `09-slide-deck.html` is the exception — it is a scroll-snap
-deck and `window.scrollTo` does not move it. Drive it with
-`press ArrowRight`, or jump with
+**A page taller than the viewport needs more than one shot.** Full-page
+capture is usually capped and scaled down — 2000px in the driver these
+templates were checked with — and the scaling costs exactly the
+legibility the check depends on. Scroll in viewport-sized steps instead.
+`09-slide-deck.html` is the exception: it is a scroll-snap deck and
+`window.scrollTo` does not move it. Drive it with the right-arrow key,
+or jump with
 `document.querySelectorAll('.slide')[n].scrollIntoView({behavior:'instant'})`
 when you want the shot without waiting out the smooth scroll.
 
-`scripts/audit-contrast.js` does the same reading for every text node
+**`scripts/audit-contrast.js` does the same reading for every text node**
 on the page and reports what fails WCAG AA. It found the `02` defect
-that eleven screenshots had not:
+that eleven screenshots had not. Set the viewport to 1280x900, load the
+page, then evaluate the script's source in it. The result is the
+findings as JSON; `[]` is a pass.
 
-```bash
-~/.claude/bin/browse-once/browse-once viewport 1280x900 \
-  -- goto "file://$TMPDIR/dark.html" \
-  -- eval "$PWD/scripts/audit-contrast.js"
-```
-
-An empty array is a pass. It is an audit aid, not a suite member: it
-needs a browser, and a browser must not become a dependency of
-`tests/run-all.sh`.
+It is an audit aid, not a suite member: it needs a browser, and a
+browser must not become a dependency of `tests/run-all.sh`.
 
 The ground is the nearest ancestor that paints **and** contains the
 text box. Ancestry alone is not enough: the beat labels in
@@ -122,6 +106,12 @@ look at the page rather than trusting the number.
 - **No writing to `~/.claude/skills/`.** The skill cannot install
   itself; decision 0005 records why. Print the command and let a person
   run it.
+- **No writing to `/tmp`.** Refused outright. Use `$TMPDIR`, which the
+  recipes above assume.
+- **No launching a browser binary yourself.** A bare
+  `chromium --headless` is denied `socket()` and dumps core before it
+  renders anything. Whatever drives the page has to be something the
+  sandbox already permits.
 - **No `git add -A`.** The sandbox masks `.bashrc`, `.env`, `.mcp.json`
   and a dozen more dotfiles into the repo root as character devices.
   They show up as untracked, and git refuses the whole staging run with

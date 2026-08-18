@@ -9,42 +9,6 @@ task comes from here rather than from
 
 ## Prioritized
 
-### High
-
-**Keep `browse-once` out of the repo before it is published.** The tool
-is local to this machine: `~/.claude/bin/browse-once/browse-once`, with
-gstack behind it. `AGENTS.md` names it eight times and gstack four
-more — the whole "Browsing and the theme check" section is written
-around it — and `scripts/audit-contrast.js` line 3 points a reader at
-that section for the invocation. Published as it stands, the repo
-would instruct anyone working on it to run a binary they do not have,
-and it would do so in the one section that documents the two checks
-`verify.sh` cannot make.
-
-The trigger is publication, not the calendar. Nothing is wrong while
-the repo is private, and the priority is High because the leak is
-silent at exactly the moment it matters: the push.
-
-Keeping the instructions in is the fallback, not the goal. If they
-stay, they have to work for somebody with no gstack and no
-`browse-once` — which means naming what the step needs (a headless
-browser, a computed style, a full-page capture) and treating the local
-binary as one way to get it.
-
-Three shapes were raised, and the choice is open:
-
-- Move the browsing section into `.claude/`, which `.gitignore`
-  already excludes, so it stays local by construction.
-- Move it into the global `CLAUDE.md`, where it is machine-wide and
-  never in any repo.
-- Keep a tool-neutral section in `AGENTS.md` and let the local file
-  supply the concrete command.
-
-Each trades away something: the first two take the instructions out of
-the repo that needs them, and the third leaves a public reader with a
-step they must still solve themselves. Recommendation to follow when
-the task is taken on.
-
 ### Medium
 
 **Raise the fixed fills that fail AA.** Found by

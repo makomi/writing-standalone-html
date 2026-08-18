@@ -1,6 +1,8 @@
 /* Reports every text node in the rendered page whose contrast against
    its own ground is below WCAG AA. Run it against a template in each
-   theme; AGENTS.md carries the browse-once invocation.
+   theme, by evaluating this source in the loaded page at a 1280x900
+   viewport. AGENTS.md, under "Browsing and the theme check", says what
+   the browser has to be able to do.
 
    This is an audit aid, not a test. It needs a browser, and a browser
    must not become a dependency of tests/run-all.sh — that is why it
