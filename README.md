@@ -29,8 +29,8 @@ passes.
 | `SKILL.md` | Built — the trigger surface and the genre selection table |
 
 All twenty templates have been rendered in both themes and every
-interactive one driven in a browser. `TASKS.md` holds what is still
-open, including two contrast shortfalls the review measured.
+interactive one driven in a browser, and every text node the contrast
+audit reports clears WCAG AA. `TASKS.md` holds what is still open.
 
 ## How it works
 

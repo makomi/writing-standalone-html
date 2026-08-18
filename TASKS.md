@@ -154,16 +154,17 @@ backlog above is what remains.
 ## Open questions
 
 **Should the post-`v1.0.0` work be tagged?** `CHANGELOG.md` carries an
-`[Unreleased]` section with five user-facing entries: the repo carries
+`[Unreleased]` section with six user-facing entries: the repo carries
 the upstream MIT notice, `scripts/verify.sh` gained a sixth check,
+text on a solid fill clears WCAG AA in five templates,
 `02-exploration-visual-designs.html` no longer
 hides its preview headings in dark theme, `--accent` and `--ok` are
 legible on a sunken panel in light theme, and `audit-contrast.js` stops
 reporting a positioned label against a fill it never touches. That is a
-`v1.1.0` by semver — a licence file and a new check outrank the three
+`v1.1.0` by semver — a licence file and a new check outrank the four
 fixes.
 Blocked on whether the skill has been installed anywhere yet. If nobody
-has `v1.0.0`, folding all five into a re-cut `v1.0.0` is cleaner than
+has `v1.0.0`, folding all six into a re-cut `v1.0.0` is cleaner than
 shipping two tags nobody used; if somebody does have it, the token fix
 argues for tagging soon, because it is a defect a reader meets on a
 first read.
