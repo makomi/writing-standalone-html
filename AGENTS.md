@@ -116,6 +116,14 @@ look at the page rather than trusting the number.
   `chromium --headless` is denied `socket()` and dumps core before it
   renders anything. Whatever drives the page has to be something the
   sandbox already permits.
+- **No `git config` writes.** `.git/config` and `~/.gitconfig` are both
+  read-only mounts, and `.git/config.lock` is masked as a character
+  device, so every `git config` call fails with "could not lock config
+  file". `git gc` and `git branch` print the same warning while
+  otherwise succeeding — it is their own bookkeeping write failing, not
+  the operation. An identity change has to be made outside the sandbox.
+  Rewriting history still works, because `git filter-branch` takes the
+  identity from environment variables.
 - **No `git add -A`.** The sandbox masks `.bashrc`, `.env`, `.mcp.json`
   and a dozen more dotfiles into the repo root as character devices.
   They show up as untracked, and git refuses the whole staging run with
