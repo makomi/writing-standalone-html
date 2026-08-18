@@ -53,6 +53,26 @@ that a browser is never a dependency. The cases worth pinning are the
 three the fix turned on: contained, straddling, and no painted
 ancestor at all.
 
+**Batch the contrast sweep into one browser session.**
+`scripts/audit-contrast.js` audits whichever page is loaded, so a
+repo-wide sweep costs one browser launch per template per theme: forty
+launches at roughly twelve seconds each, eight minutes for twenty
+templates in light and dark. Measured on 2026-08-18.
+
+The eight minutes is not the cost that matters — what matters is that a
+sweep that expensive gets run rarely and selectively. That is how the
+two one-character failures in `03-code-review-pr.html` and
+`17-pr-writeup.html` survived both the 2026-08-16 sweep and the
+2026-08-17 re-measurement. A one-minute sweep gets run after every
+template edit.
+
+Low effort: a wrapper that navigates, evaluates and collects per page
+inside a single session instead of relaunching. Leave the script itself
+alone so it stays usable against one page by hand, and prove the
+batched numbers match the per-page ones on the five templates with
+known ratios. It stays an audit aid either way — a browser must not
+become a dependency of `tests/run-all.sh`.
+
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
 `setProperty` and `setAttribute("style", ...)`. Three more reach CSS and
