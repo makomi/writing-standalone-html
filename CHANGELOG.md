@@ -12,6 +12,15 @@ measurements — lives in commit bodies. See the changelog rules in
 
 ## [Unreleased]
 
+### Added
+
+- `LICENSE`. The twenty templates derive from
+  `anthropics/html-effectiveness` at
+  `58c305be97f47b26b678f2c07dec01d4242268ec`, and MIT requires that
+  notice to travel with them. The tooling in this repo is MIT under its
+  own copyright. The file carries both, over the upstream licence text
+  unchanged.
+
 ### Changed
 
 - `scripts/verify.sh` also fails a template whose script writes a raw

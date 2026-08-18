@@ -158,7 +158,11 @@ and in dark.
 
 ## License
 
-Templates derive from MIT-licensed upstream material. Every template
-carries its source file, its upstream commit and its blob SHA in a
-header comment. `templates/MANIFEST.json` collects the same records for
-the drift checker.
+Templates derive from MIT-licensed upstream material, and the tooling in
+`scripts/`, `tests/` and `lib/` is original to this repo. Both are MIT,
+and `LICENSE` carries both copyrights: the upstream notice from
+`anthropics/html-effectiveness`, at the commit the templates were taken
+from, and the one for the tooling. Every template carries its source
+file, its upstream commit and its blob SHA in a header comment.
+`templates/MANIFEST.json` collects the same records for the drift
+checker.
