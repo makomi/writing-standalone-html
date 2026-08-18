@@ -420,3 +420,26 @@ the command and let a human run it:
 ```bash
 echo "mv $(pwd) ~/.claude/skills/"
 ```
+
+**A session cannot confirm any install route.** `README.md` and decision
+`0005` both offer a symlink from the skills directory to this repo, and
+both label it unverified; `TASKS.md` carries the task to confirm or
+withdraw it. Three routes were tried on 2026-08-19 and all three are
+closed, so do not spend the session rediscovering them:
+
+- Creating the symlink: writes are denied to `~/.claude/skills/` and to
+  `.claude/skills/`, which is decision 0005's whole point.
+- `claude doctor --debug` in a scratch project holding a symlinked skill
+  directory: it reads settings files but loads no skills, so it reports
+  nothing either way.
+- `claude -p --debug` in that project, to read its `[skills]` discovery
+  lines: it exits at `Not logged in`, because reads of
+  `~/.claude/.credentials.json` are denied too.
+
+What is known: Claude Code follows a symlinked `SKILL.md`, because every
+gstack skill is a real directory holding a `SKILL.md` symlink and those
+skills load. Whether discovery follows a symlink at the *top* level is
+the open part — enumeration can `lstat` an entry and see a link where
+`stat` would see a directory. Settling it needs a person outside the
+sandbox: create the link, start a session, see whether the skill is
+listed.

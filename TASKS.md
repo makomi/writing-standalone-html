@@ -16,8 +16,10 @@ decision `0005` both offer
 `ln -s <repo> ~/.claude/skills/writing-standalone-html` and both label
 it unverified. A documented route in an unknown state is worse than no
 route. Trivial for a person — create the symlink, start a session, see
-whether the skill is listed — and impossible for an agent, because
-writes to `~/.claude/skills/` are denied.
+whether the skill is listed — and impossible for an agent. Three routes
+were tried on 2026-08-19 and all three are closed; `AGENTS.md`, under
+"Installing after a change", records which and what is already known,
+so the next session does not spend itself rediscovering them.
 
 ### Low
 
