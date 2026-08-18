@@ -232,15 +232,19 @@ python3 tests/stub_github.py drifted -- ./scripts/update.sh
   rc=$?; ./scripts/upstream.sh clean; exit $rc
 ```
 
-Three suites skip rather than fail when they cannot run, and the runner
-reports a skip as a skip rather than a pass. `test_js_syntax.py` and
-`test_audit_contrast.py` skip when `node` is absent — node is not a
-dependency and must not become one. In `test_update.sh` only the final
-live check skips when the GitHub API is unreachable, because an outage
-reported as a code failure is the exact confusion `update.sh` has a
-distinct exit 2 to prevent. Its other assertions run against
-`tests/stub_github.py` and do not skip, so drift classification is
-exercised with no network at all.
+A suite that cannot run reports a skip rather than a pass, and the
+runner reports a skip as a skip. `test_js_syntax.py` and
+`test_audit_contrast.py` skip in full when `node` is absent — node is
+not a dependency and must not become one.
+
+`test_update.sh` is the partial case. Only its final live check skips
+when the GitHub API is unreachable, because an outage reported as a
+code failure is the exact confusion `update.sh` has a distinct exit 2
+to prevent. Its other assertions run against `tests/stub_github.py` and
+do not skip, so drift classification is exercised with no network at
+all. `run-all.sh` still labels the whole suite "skipped", because its
+only signal is a `SKIP` line in the output — read the body to see what
+actually ran.
 
 The API budget is why the suite has that shape. Unauthenticated GitHub
 allows 60 calls an hour. Until 2026-08-18 `test_update.sh` invoked
@@ -256,6 +260,10 @@ Every run says what it spent: `update.sh` prints
 `spent 2 API call(s), 58 of 60 left this hour`, read free from the
 `X-RateLimit-*` response headers. A near-empty budget is visible before
 it becomes an exit 2. Set `GITHUB_TOKEN` to raise the ceiling.
+
+Keep the live call to exactly one site. A second one is how the old
+shape grew: every assertion that wanted a fresh API answer took one,
+and nothing counted the total until the budget ran out mid-suite.
 
 Do not add a dependency, a package manager, or a virtualenv. The repo
 must stay installable by copying a directory. This overrides the
