@@ -41,6 +41,7 @@ run() {
 run "checker fixtures"        ./tests/test_verify.sh
 run "token roles and contrast" python3 tests/test_tokens.py
 run "inline script syntax"    python3 tests/test_js_syntax.py
+run "contrast audit rules"    python3 tests/test_audit_contrast.py
 run "upstream borrow"         ./tests/test_upstream.sh
 
 echo

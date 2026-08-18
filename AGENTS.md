@@ -94,7 +94,12 @@ node, and the first two were real AA failures that an earlier `> 1`
 bound hid until 2026-08-18.
 
 It is an audit aid, not a suite member: it needs a browser, and a
-browser must not become a dependency of `tests/run-all.sh`.
+browser must not become a dependency of `tests/run-all.sh`. Its rules
+are a suite member, though. Everything that is not a DOM read — colour
+parsing, contrast, the rect geometry, the node filter, the large-text
+threshold and the ground rule — is a pure function the file exports
+when node requires it, and `tests/test_audit_contrast.py` pins each
+one. Change a rule and change its case.
 
 **`scripts/sweep-contrast.sh` runs that audit over every template in
 both themes** in one browser session per theme: about thirteen seconds
@@ -213,6 +218,7 @@ The individual pieces:
 ./tests/test_upstream.sh            # borrow and return the clone
 python3 tests/test_tokens.py        # token roles and WCAG contrast
 python3 tests/test_js_syntax.py     # every inline script parses
+python3 tests/test_audit_contrast.py  # the contrast audit's own rules
 ./tests/test_update.sh              # drift classification and exit codes
 
 # This one reads upstream sources, so bracket it:
@@ -220,10 +226,10 @@ python3 tests/test_js_syntax.py     # every inline script parses
   rc=$?; ./scripts/upstream.sh clean; exit $rc
 ```
 
-Two suites skip rather than fail when they cannot run, and the runner
-reports a skip as a skip rather than a pass. `test_js_syntax.py` skips
-when `node` is absent — node is not a dependency and must not become
-one. `test_update.sh` skips when the GitHub API is unreachable, because
+Three suites skip rather than fail when they cannot run, and the runner
+reports a skip as a skip rather than a pass. `test_js_syntax.py` and
+`test_audit_contrast.py` skip when `node` is absent — node is not a
+dependency and must not become one. `test_update.sh` skips when the GitHub API is unreachable, because
 an outage reported as a code failure is the exact confusion `update.sh`
 has a distinct exit 2 to prevent.
 

@@ -2,13 +2,19 @@
    its own ground is below WCAG AA. Run it against a template in each
    theme, by evaluating this source in the loaded page at a 1280x900
    viewport. AGENTS.md, under "Browsing and the theme check", says what
-   the browser has to be able to do.
+   the browser has to be able to do; scripts/sweep-contrast.sh does it
+   for every template in both themes in one session.
 
    This is an audit aid, not a test. It needs a browser, and a browser
    must not become a dependency of tests/run-all.sh — that is why it
    lives here and not there. tests/test_tokens.py checks the token pairs
    the design system declares; this checks what a page actually renders,
    including a token pair no one thought to declare.
+
+   Every rule sits in a pure function and every DOM read sits in the
+   walk at the bottom. tests/test_audit_contrast.py requires this file
+   in node, where there is no document, and pins the rules against
+   hand-built rectangles.
 
    Returns a JSON array. An empty array is a pass. */
 (function () {
@@ -49,9 +55,25 @@
         && a.top < b.bottom && a.bottom > b.top;
   }
 
-  /* What the page paints behind a text box. A translucent layer is
-     skipped rather than blended: the aim is to name suspects, and a
-     blend would invent a colour no token declares.
+  /* One character is text. A diff marker, a focus-item number and a
+     middot separator are all single-character nodes, and the first two
+     were real AA failures that a `> 1` bound hid until 2026-08-18.
+     `.trim()` already drops the whitespace-only nodes, which is the
+     only thing this bound has to skip. Text belonging to a child
+     element is that child's to answer for, not this one's. */
+  function hasOwnText(el) {
+    return Array.prototype.some.call(el.childNodes, function (n) {
+      return n.nodeType === 3 && n.textContent.trim().length > 0;
+    });
+  }
+
+  /* WCAG's large-text threshold: 24px, or 18.66px when bold. */
+  function needsRatio(size, bold) {
+    return size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+  }
+
+  /* What a text box is read against, given the painted ancestors from
+     nearest outward and the ground of last resort.
 
      Ancestry alone does not make a ground. An absolutely positioned
      child can sit clear of the parent it is nested in — the beat
@@ -61,22 +83,56 @@
 
      An ancestor that overlaps without containing is a real ground for
      part of the run: the text straddles an edge, half on a chip and
-     half off it. Those are collected and the caller reports whichever
-     ground reads worst. */
-  function groundsOf(el) {
-    var box = el.getBoundingClientRect();
+     half off it. Whichever ground reads worst is the one reported, and
+     a partial ground only wins by being worse than the whole one. */
+  function assess(fg, box, painted, pageGround) {
+    var ground = pageGround;
     var partial = [];
+    for (var i = 0; i < painted.length; i++) {
+      if (contains(painted[i].rect, box)) { ground = painted[i].color; break; }
+      if (intersects(painted[i].rect, box)) partial.push(painted[i].color);
+    }
+
+    var result = { ground: ground, ratio: contrast(fg, ground), straddles: false };
+    for (var j = 0; j < partial.length; j++) {
+      var r = contrast(fg, partial[j]);
+      if (r < result.ratio) {
+        result = { ground: partial[j], ratio: r, straddles: true };
+      }
+    }
+    return result;
+  }
+
+  /* Required in node rather than evaluated in a page: hand back the
+     rules and stop, because everything below this line reads a DOM
+     that node does not have. */
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      parse: parse,
+      luminance: luminance,
+      contrast: contrast,
+      contains: contains,
+      intersects: intersects,
+      hasOwnText: hasOwnText,
+      needsRatio: needsRatio,
+      assess: assess,
+      EPS: EPS
+    };
+    return;
+  }
+
+  /* A translucent layer is skipped rather than blended: the aim is to
+     name suspects, and a blend would invent a colour no token
+     declares. */
+  function paintedAncestors(el) {
+    var out = [];
     var n = el;
     while (n && n.nodeType === 1) {
       var c = parse(getComputedStyle(n).backgroundColor);
-      if (c && c.a > 0.5) {
-        var rect = n.getBoundingClientRect();
-        if (contains(rect, box)) return { ground: c, partial: partial };
-        if (intersects(rect, box)) partial.push(c);
-      }
+      if (c && c.a > 0.5) out.push({ color: c, rect: n.getBoundingClientRect() });
       n = n.parentElement;
     }
-    return { ground: pageGround(), partial: partial };
+    return out;
   }
 
   /* The ground of last resort, for a text box no painted ancestor
@@ -101,17 +157,10 @@
   }
 
   var found = [];
+  var page = pageGround();
 
-  /* One character is text. A diff marker, a focus-item number and a
-     middot separator are all single-character nodes, and the first two
-     were real AA failures that a `> 1` bound hid until 2026-08-18.
-     `.trim()` already drops the whitespace-only nodes, which is the
-     only thing this bound has to skip. */
   document.querySelectorAll("*").forEach(function (el) {
-    var ownText = Array.from(el.childNodes).some(function (n) {
-      return n.nodeType === 3 && n.textContent.trim().length > 0;
-    });
-    if (!ownText) return;
+    if (!hasOwnText(el)) return;
 
     var cs = getComputedStyle(el);
     if (cs.visibility === "hidden" || cs.display === "none") return;
@@ -123,32 +172,23 @@
     var fg = parse(cs.color);
     if (!fg || fg.a < 0.5) return;
 
-    var grounds = groundsOf(el);
-    var bg = grounds.ground;
-    var ratio = contrast(fg, bg);
-    var straddles = false;
-    grounds.partial.forEach(function (c) {
-      var r = contrast(fg, c);
-      if (r < ratio) { ratio = r; bg = c; straddles = true; }
-    });
+    var read = assess(fg, box, paintedAncestors(el), page);
+    var needs = needsRatio(parseFloat(cs.fontSize),
+                           parseInt(cs.fontWeight, 10) >= 700);
 
-    var size = parseFloat(cs.fontSize);
-    var bold = parseInt(cs.fontWeight, 10) >= 700;
-    var large = size >= 24 || (size >= 18.66 && bold);
-    var needs = large ? 3 : 4.5;
-
-    if (ratio < needs) {
+    if (read.ratio < needs) {
+      var bg = read.ground;
       var finding = {
         selector: describe(el),
         text: el.textContent.trim().slice(0, 40),
         color: cs.color,
         ground: "rgb(" + bg.r + "," + bg.g + "," + bg.b + ")",
-        ratio: Math.round(ratio * 100) / 100,
+        ratio: Math.round(read.ratio * 100) / 100,
         needs: needs
       };
       /* The text crosses this ground's edge rather than sitting on it,
          so the ratio holds for part of the run. Look at the page. */
-      if (straddles) finding.straddles = true;
+      if (read.straddles) finding.straddles = true;
       found.push(finding);
     }
   });

@@ -11,21 +11,6 @@ task comes from here rather than from
 
 ### Medium
 
-**Put `scripts/audit-contrast.js` under test.** Nothing in
-`tests/` exercises it. Its ground rule changed on 2026-08-17 — an
-ancestor counts only if it contains the text box, and a straddling
-ground is reported with `"straddles": true` — and that logic was
-verified by hand against scratch pages that no longer exist. The next
-edit can reintroduce the false positive silently, in the one tool the
-theme review depends on. Medium effort: lift the pure helpers
-(`contrast`, `luminance`, `contains`, `intersects`) into a form node
-can import, and add a suite that skips when node is absent, the way
-`test_js_syntax.py` does. No browser, so `run-all.sh` keeps its rule
-that a browser is never a dependency. The cases worth pinning are the
-three the ground fix turned on — contained, straddling, and no painted
-ancestor at all — and the node filter, which counts a one-character
-node as text since 2026-08-18.
-
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
 `setProperty` and `setAttribute("style", ...)`. Three more reach CSS and
