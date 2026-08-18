@@ -26,32 +26,6 @@ three the ground fix turned on — contained, straddling, and no painted
 ancestor at all — and the node filter, which counts a one-character
 node as text since 2026-08-18.
 
-**Ship the batched contrast sweep as a script.** A repo-wide sweep
-costs one browser launch per template per theme when each page is
-driven by hand: forty launches at roughly twelve seconds each, eight
-minutes for twenty templates in light and dark, measured on
-2026-08-18. Chaining all twenty pages into one `browse-once` session
-takes 13 seconds per theme, measured on 2026-08-18 with a throwaway
-driver that is now gone.
-
-The eight minutes is not the cost that matters — what matters is that a
-sweep that expensive gets run rarely and selectively. That is how the
-two one-character failures in `03-code-review-pr.html` and
-`17-pr-writeup.html` survived both the 2026-08-16 sweep and the
-2026-08-17 re-measurement. A half-minute sweep gets run after every
-template edit.
-
-Low effort, and the shape is known: navigate, evaluate and collect per
-page inside a single session, writing the dark copies to `$TMPDIR`.
-Leave `audit-contrast.js` itself alone so it stays usable against one
-page by hand. The batched and per-page numbers were confirmed to agree
-on `18-editor-triage-board.html` and `19-editor-feature-flags.html`;
-confirm the rest before trusting a batched clean run. The concrete
-browser invocation is machine-local, so whatever ships has to take the
-driver from `.claude/browsing.md` or an argument, not hard-code one —
-decision 0008. It stays an audit aid either way: a browser must not
-become a dependency of `tests/run-all.sh`.
-
 **Close the three colour-in-script routes the check misses.**
 `check_no_colour_in_scripts` triggers on four sinks: `style`, `cssText`,
 `setProperty` and `setAttribute("style", ...)`. Three more reach CSS and
@@ -68,9 +42,13 @@ today, so this is closing the rule rather than repairing a breach.
 spends two GitHub API calls. Unauthenticated GitHub allows 60 an hour,
 so six full suite runs exhaust it — and the suite then reports green
 with drift detection skipped, which is a green run hiding an unexercised
-suite. That happened on 2026-08-16. Small to medium effort: fetch the
-tree once per run and reuse it, or point four of the five assertions at
-a stub and keep one live call as the integration check.
+suite. That happened on 2026-08-16. Running out mid-suite is worse
+again: on 2026-08-18 a run exhausted the budget partway and `run-all.sh`
+reported the suite as failed, where the next run — with the whole budget
+already gone — reported the same state as a skip. Small to medium
+effort: fetch the tree once per run and reuse it, or point four of the
+five assertions at a stub and keep one live call as the integration
+check.
 
 **Confirm or withdraw the symlink install route.** `README.md` and
 decision `0005` both offer

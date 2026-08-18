@@ -96,6 +96,23 @@ bound hid until 2026-08-18.
 It is an audit aid, not a suite member: it needs a browser, and a
 browser must not become a dependency of `tests/run-all.sh`.
 
+**`scripts/sweep-contrast.sh` runs that audit over every template in
+both themes** in one browser session per theme: about thirteen seconds
+a theme, against the eight minutes forty separate launches cost. Run it
+after any template edit — the two one-character failures found on
+2026-08-18 survived two earlier sweeps because a sweep that costs eight
+minutes gets run selectively. Batched and per-page results were
+compared on eighteen pages carrying eight known findings on 2026-08-18
+and agreed exactly. It exits 0 clean, 1 on findings, 2 when it could
+not run.
+
+The browser invocation stays machine-local (decision 0008): the script
+takes `--driver <command>` and otherwise reads the `sweep-driver:` line
+of `.claude/browsing.md`. The command is called with the audit's path
+and a list of urls and must print one JSON object mapping each url to
+that page's findings, which keeps the batching in the repo and the
+driver grammar out of it.
+
 The ground is the nearest ancestor that paints **and** contains the
 text box. Ancestry alone is not enough: the beat labels in
 `07-prototype-animation.html` are absolutely positioned clear of the
@@ -236,9 +253,10 @@ Two rules people get wrong:
   dependency warning needs a prerequisite to point at. Use judgment and
   record it in the template's header notes.
 
-After converting, run `./scripts/verify.sh <file>`, then render the file
-in both themes and run `scripts/audit-contrast.js` against each. See
-"Browsing and the theme check" for both commands. The audit catches a
+After converting, run `./scripts/verify.sh <file>`, then
+`./scripts/sweep-contrast.sh <file>`, which renders it in both themes
+and audits each. See "Browsing and the theme check" for what that
+needs. The audit catches a
 colour mapped to a role that inverts; the eye catches the rest, which is
 why both still happen.
 

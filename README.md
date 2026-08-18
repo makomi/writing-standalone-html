@@ -23,6 +23,7 @@ passes.
 | `scripts/stamp.sh` | Built — re-embed the token block |
 | `scripts/update.sh` | Built — read-only drift check over the GitHub API |
 | `scripts/audit-contrast.js` | Built — WCAG audit of a rendered page, run in a browser |
+| `scripts/sweep-contrast.sh` | Built — that audit over every template in both themes, one browser session per theme |
 | `templates/MANIFEST.json` | Built — 20 records, pinned at `58c305b` |
 | `lib/`, `tests/` | Built — 6 test suites, all green via `tests/run-all.sh` |
 | `templates/` | 20 of 20 converted |
@@ -155,6 +156,17 @@ in `verify.sh`. `scripts/audit-contrast.js` reports every text node
 below WCAG AA against the ground it is painted on; run it once per
 theme. The second is a look: whether the page reads correctly in light
 and in dark.
+
+`scripts/sweep-contrast.sh` runs that audit over every template in both
+themes without relaunching the browser per page — about thirteen
+seconds a theme, against eight minutes for forty separate launches. It
+exits 0 when every page is clean, 1 on findings, and 2 when it could
+not run. The browser invocation itself is machine-local, so the script
+takes it as `--driver <command>` and otherwise reads the
+`sweep-driver:` line of a git-ignored `.claude/browsing.md`. The
+contract is in the script's own header: the command is called with the
+audit's path and a list of urls, and prints one JSON object mapping
+each url to that page's findings.
 
 ## License
 

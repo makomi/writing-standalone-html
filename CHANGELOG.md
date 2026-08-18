@@ -20,6 +20,13 @@ measurements — lives in commit bodies. See the changelog rules in
   notice to travel with them. The tooling in this repo is MIT under its
   own copyright. The file carries both, over the upstream licence text
   unchanged.
+- `scripts/sweep-contrast.sh`, which runs the contrast audit over every
+  template in both themes in one browser session per theme — about
+  thirteen seconds a theme, where one launch per page costs eight
+  minutes. It exits 0 when every page is clean, 1 on findings, and 2
+  when it could not run. The browser invocation stays machine-local:
+  pass `--driver <command>`, or let it read the `sweep-driver:` line of
+  a `.claude/browsing.md` of your own.
 
 ### Changed
 
