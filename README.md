@@ -9,6 +9,19 @@ and small single-purpose editing UIs.
 Every template is one file. No build step, no dependency, no external
 reference. Open it in a browser and it works.
 
+The templates come from Anthropic's own example pages:
+
+- [**Browse the examples**](https://thariqs.github.io/html-effectiveness/)
+  — the twenty pages rendered, to see what a finished document looks
+  like before you generate one.
+- [**`anthropics/html-effectiveness`**](https://github.com/anthropics/html-effectiveness)
+  — the source those pages come from, MIT licensed.
+
+This repo turns each example into a template: the fictional content
+comes out, one worked instance of every repeating pattern stays, and
+every colour moves onto a shared token system that works in light and
+dark. See [How it works](#how-it-works).
+
 ## Status
 
 **`v1.0.0`.** All ten tasks of the build plan are done and every test
